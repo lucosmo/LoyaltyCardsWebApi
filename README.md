@@ -16,3 +16,9 @@ A WebAPI built using C# and .NET 8 to manage user data and their loyalty cards. 
 - **JWT**: For secure authentication.
 - **SQL Server**: Database for storing user and loyalty card data.
 
+## Getting Started 
+### Prerequisites 
+- .NET 8 SDK
+- SQL Server (or any compatible database) ### Installation
+- 1. **Clone the repository:
+     ** ```bash git clone https://github.com/yourusername/UserLoyaltyCardsAPI.git cd UserLoyaltyCardsAPI
