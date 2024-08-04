@@ -19,6 +19,13 @@ A WebAPI built using C# and .NET 8 to manage user data and their loyalty cards. 
 ## Getting Started 
 ### Prerequisites 
 - .NET 8 SDK
-- SQL Server (or any compatible database) ### Installation
-- 1. **Clone the repository:
-     ** ```bash git clone https://github.com/yourusername/UserLoyaltyCardsAPI.git cd UserLoyaltyCardsAPI
+- SQL Server (or any compatible database)
+### Installation
+- **Clone the repository:**
+  ```git clone https://github.com/yourusername/UserLoyaltyCardsAPI.git```
+- **Set up the database:**
+  Ensure you have a SQL Server running and update the connection string in appsettings.json
+- **Run the migrations:**
+  ```dotnet ef database update```
+- **Run the application:**
+  ```dotnet run```
