@@ -1,7 +1,7 @@
 namespace LoyalityCardsWebApi.API.Models;
 public class User
 {
-    public long Id { get; set;}
+    public int Id { get; set;}
     public required string UserName { get; set;}
     public required string Password { get; set;}
     public required string Email { get; set;}
@@ -16,7 +16,7 @@ public class User
         
     }
 
-    public User(long id, string userName, string password, string email, string firstName, string lastName, DateTime accountCreatedDate, List<Card> cards, string settings)
+    public User(int id, string userName, string password, string email, string firstName, string lastName, DateTime accountCreatedDate, List<Card> cards, string settings)
     {
         Id = id;
         UserName = userName;
