@@ -24,7 +24,16 @@ A WebAPI built using C# and .NET 8 to manage user data and their loyalty cards. 
 - **Clone the repository:**
   ```git clone https://github.com/yourusername/UserLoyaltyCardsAPI.git```
 - **Set up the database:**
-  Ensure you have a SQL Server running and update the connection string in appsettings.json
+  Database of choice is PostgreSQL.
+  Root project folder contains .env file which contains database password:
+  ```POSTGRES_PASSWORD: password```
+  Create .env file yourself, as this file is not published due to security reasons.
+  Install Entity Framework Core:
+  ```dotnet add package Microsoft.EntityFrameworkCore```
+  Install Npgsql (PostgreSQL provider) for Entity Framework Core:
+  ```dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL```
+  Install Design package for Entity Framework Core:
+  ```dotnet add package Microsoft.EntityFrameworkCore.Design```
 - **Run the migrations:**
   ```dotnet ef database update```
 - **Run the application:**
