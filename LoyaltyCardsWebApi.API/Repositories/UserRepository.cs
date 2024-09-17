@@ -8,9 +8,11 @@ public class UserRepository : IUserRepository
     {
         _appDbContext = appDbContext;
     }
-    public Task<User> Create(User newUser)
+    public async Task<User> CreateAsync(User newUser)
     {
-        throw new NotImplementedException();
+        var createdUser = await _appDbContext.Users.AddAsync(newUser);
+        await _appDbContext.SaveChangesAsync();
+        return createdUser.Entity;
     }
 
     public Task<User> Delete(int id)
