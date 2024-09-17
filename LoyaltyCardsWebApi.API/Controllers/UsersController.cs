@@ -1,6 +1,7 @@
 using LoyalityCardsWebApi.API.Data.DTOs;
 using LoyalityCardsWebApi.API.Models;
 using LoyalityCardsWebApi.API.Repositories;
+using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoyalityCardsWebApi.API.Controllers;
@@ -8,27 +9,16 @@ namespace LoyalityCardsWebApi.API.Controllers;
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
-    private readonly IUserRepository _userRepository;
-    public UsersController(IUserRepository userRepository)
+    private readonly IUserService _userService;
+    public UsersController(IUserService userService)
     {
-        _userRepository = userRepository;
+        _userService = userService;
     }
 
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] CreateUserDto newUser)
     {
-        var newUserModel = new User
-        {
-            UserName = newUser.UserName,
-            Email = newUser.Email,
-            Password = newUser.Password,
-            AccountCreatedDate = DateTime.UtcNow
-            
-        };
-
-        var createdUser = await _userRepository.CreateAsync(newUserModel);
-
+        var createdUser = await _userService.CreateUserAsync(newUser);
         return Ok(createdUser);
-
     }
 }
