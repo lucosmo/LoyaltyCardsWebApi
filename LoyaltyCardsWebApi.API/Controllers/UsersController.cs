@@ -16,9 +16,20 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CreateUserDto newUser)
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto newUser)
     {
         var createdUser = await _userService.CreateUserAsync(newUser);
         return Ok(createdUser);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUserById(int id)
+    {
+        var user = await _userService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        return Ok(user);
     }
 }

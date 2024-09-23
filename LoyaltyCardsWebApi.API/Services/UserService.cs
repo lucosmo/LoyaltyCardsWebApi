@@ -24,4 +24,10 @@ public class UserService : IUserService
         var createdUser = await _userRepository.CreateAsync(newUserModel);
         return createdUser;
     }
+
+    public async Task<User> GetUserByIdAsync(int id)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+        return user;
+    }
 }

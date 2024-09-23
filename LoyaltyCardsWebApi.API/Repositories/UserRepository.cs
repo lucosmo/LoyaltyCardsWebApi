@@ -20,9 +20,10 @@ public class UserRepository : IUserRepository
         throw new NotImplementedException();
     }
 
-    public Task<User> GetUserById(int id)
+    public async Task<User> GetUserByIdAsync(int id)
     {
-        throw new NotImplementedException();
+        User? user = await _appDbContext.Users.FindAsync(id);
+        return user;
     }
 
     public Task<IEnumerable<User>> GetUsers()
