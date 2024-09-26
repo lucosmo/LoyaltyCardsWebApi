@@ -25,9 +25,14 @@ public class UserService : IUserService
         return createdUser;
     }
 
-    public async Task<User> GetUserByIdAsync(int id)
+    public async Task<User?> GetUserByIdAsync(int id)
     {
         var user = await _userRepository.GetUserByIdAsync(id);
         return user;
+    }
+    public async Task<User?> DeleteAsync(int id)
+    {
+        var userToDelete = await _userRepository.DeleteAsync(id);       
+        return userToDelete;
     }
 }

@@ -15,12 +15,19 @@ public class UserRepository : IUserRepository
         return createdUser.Entity;
     }
 
-    public Task<User> Delete(int id)
+    public async Task<User?> DeleteAsync(int id)
     {
-        throw new NotImplementedException();
+        User? userToDelete = await _appDbContext.Users.FindAsync(id);
+        if (userToDelete != null)
+        {
+            _appDbContext.Users.Remove(userToDelete);
+            await _appDbContext.SaveChangesAsync();
+        }
+
+        return userToDelete;
     }
 
-    public async Task<User> GetUserByIdAsync(int id)
+    public async Task<User?> GetUserByIdAsync(int id)
     {
         User? user = await _appDbContext.Users.FindAsync(id);
         return user;
