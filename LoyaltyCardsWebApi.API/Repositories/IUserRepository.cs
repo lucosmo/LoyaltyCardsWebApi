@@ -5,7 +5,7 @@ public interface IUserRepository
 {
     Task<User?> GetUserByIdAsync(int id);
     Task<User> CreateAsync(User newUser);
-    Task<User> Update(User user);
+    Task<bool> UpdateAsync(User user);
     Task<User?> DeleteAsync(int id);
     Task<List<User>?> GetAllUsersAsync();
 }

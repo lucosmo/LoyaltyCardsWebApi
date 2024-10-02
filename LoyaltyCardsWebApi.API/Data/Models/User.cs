@@ -1,3 +1,5 @@
+using LoyalityCardsWebApi.API.Data.DTOs;
+
 namespace LoyalityCardsWebApi.API.Models;
 public class User
 {

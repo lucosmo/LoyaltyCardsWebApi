@@ -41,4 +41,24 @@ public class UserService : IUserService
         var users = await _userRepository.GetAllUsersAsync();
         return users;
     }
+
+    public async Task<bool> UpdateUserAsync(int id, UpdatedUserDto updatedUser)
+    {
+        var existingUser = await _userRepository.GetUserByIdAsync(id); 
+        if (existingUser == null)
+        {
+            return false;
+        }        
+        if (updatedUser.Email != null && updatedUser.Email != existingUser.Email)
+        {
+            existingUser.Email = updatedUser.Email;
+        }
+        if (updatedUser.Password != null && updatedUser.Password != existingUser.Password)
+        {
+            existingUser.Password = updatedUser.Password;
+        }
+
+        var isUserUpdated = await _userRepository.UpdateAsync(existingUser);
+        return isUserUpdated;
+    }
 }

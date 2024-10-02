@@ -40,8 +40,10 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public Task<User> Update(User user)
+    public async Task<bool> UpdateAsync(User user)
     {
-        throw new NotImplementedException();
+        _appDbContext.Users.Update(user);
+        var changedRows = await _appDbContext.SaveChangesAsync();
+        return changedRows > 0;
     }
 }

@@ -54,4 +54,16 @@ public class UsersController : ControllerBase
         }
         return Ok(user);
     }
+
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody]UpdatedUserDto updatedUser)
+    {
+        var user = await _userService.UpdateUserAsync(id, updatedUser);
+        if (user == false)
+        {
+            return NotFound();
+        }
+        return Ok(updatedUser);
+    }
 }
+
