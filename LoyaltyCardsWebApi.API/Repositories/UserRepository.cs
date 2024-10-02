@@ -1,4 +1,5 @@
 using LoyalityCardsWebApi.API.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace LoyalityCardsWebApi.API.Repositories;
 public class UserRepository : IUserRepository
@@ -27,15 +28,16 @@ public class UserRepository : IUserRepository
         return userToDelete;
     }
 
+    public async Task<List<User>?> GetAllUsersAsync()
+    {
+        var users = await _appDbContext.Users.ToListAsync();
+        return users;
+    }
+
     public async Task<User?> GetUserByIdAsync(int id)
     {
         User? user = await _appDbContext.Users.FindAsync(id);
         return user;
-    }
-
-    public Task<IEnumerable<User>> GetUsers()
-    {
-        throw new NotImplementedException();
     }
 
     public Task<User> Update(User user)

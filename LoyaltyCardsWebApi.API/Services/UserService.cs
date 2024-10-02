@@ -35,4 +35,10 @@ public class UserService : IUserService
         var userToDelete = await _userRepository.DeleteAsync(id);       
         return userToDelete;
     }
+
+    public async Task<List<User>?> GetAllUsersAsync()
+    {
+        var users = await _userRepository.GetAllUsersAsync();
+        return users;
+    }
 }

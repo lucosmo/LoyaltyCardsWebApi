@@ -5,5 +5,7 @@ namespace LoyaltyCardsWebApi.API.Services;
 public interface IUserService
 {
     Task<User> CreateUserAsync(CreateUserDto newUser);
-    Task<User> GetUserByIdAsync(int id);
+    Task<List<User>?> GetAllUsersAsync();
+    Task<User?> GetUserByIdAsync(int id);
+    Task<User?> DeleteAsync(int id);
 }

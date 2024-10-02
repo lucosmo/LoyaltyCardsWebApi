@@ -22,6 +22,17 @@ public class UsersController : ControllerBase
         return Ok(createdUser);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _userService.GetAllUsersAsync();
+        if (users == null)
+        {
+            return NotFound();
+        }
+        return Ok(users);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {
