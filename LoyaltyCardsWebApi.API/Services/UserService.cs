@@ -45,10 +45,10 @@ public class UserService : IUserService
     public async Task<bool> UpdateUserAsync(int id, UpdatedUserDto updatedUser)
     {
         var existingUser = await _userRepository.GetUserByIdAsync(id); 
-        if (existingUser == null)
+        if (existingUser == null || updatedUser == null)
         {
             return false;
-        }        
+        }     
         if (updatedUser.Email != null && updatedUser.Email != existingUser.Email)
         {
             existingUser.Email = updatedUser.Email;
