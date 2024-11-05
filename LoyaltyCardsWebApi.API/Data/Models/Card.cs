@@ -1,3 +1,5 @@
+using LoyalityCardsWebApi.API.Data.DTOs;
+
 namespace LoyalityCardsWebApi.API.Models;
 
 public class Card 
@@ -25,5 +27,30 @@ public class Card
         UserId = userId;
         User = user;
     }
+
+    public static CardDto ToCardDto(Card card)
+    {
+        return new CardDto
+        {
+            Id = card.Id,
+            Name = card.Name,
+            Image = card.Image,
+            Barcode = card.Barcode
+        };
+    }
+
+    public static Card FromCreateCardDto(CreateCardDto createCardDto, int userId, User user)
+    {
+        return new Card
+        {
+            Name = createCardDto.Name,
+            Image = createCardDto.Image,
+            Barcode = createCardDto.Barcode,
+            AddedAt = DateTime.UtcNow,
+            UserId = userId,
+            User = user
+        };
+    }
+
 }
 
