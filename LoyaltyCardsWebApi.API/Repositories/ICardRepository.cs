@@ -3,9 +3,9 @@ using LoyalityCardsWebApi.API.Models;
 namespace LoyalityCardsWebApi.API.Repositories;
 public interface ICardRepository
 {
-    Task<IEnumerable<Card>> GetCards();
-    Task<Card> GetCardById(int id);
-    Task<Card> Create(Card newCard);
-    Task<Card> Update(Card card);
-    Task<Card> Delete(int id);
+    Task<IEnumerable<Card>?> GetCardsAsync();
+    Task<Card?> GetCardByIdAsync(int id);
+    Task<Card> CreateAsync(Card newCard);
+    Task<bool> UpdateAsync(Card card);
+    Task<Card?> DeleteAsync(int id);
 }
