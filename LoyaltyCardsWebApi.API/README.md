@@ -34,6 +34,9 @@ A WebAPI built using C# and .NET 8 to manage user data and their loyalty cards. 
   ```dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL```
   Install Design package for Entity Framework Core:
   ```dotnet add package Microsoft.EntityFrameworkCore.Design```
+- **JWT:**
+  Install JwtBearer package:
+  ```dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer```
 - **Run the migrations:**
   ```dotnet ef database update```
 - **Run the application:**
