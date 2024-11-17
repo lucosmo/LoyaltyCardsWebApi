@@ -10,7 +10,16 @@ using System.Text;
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var jwtSettings = builder.Configuration.GetSection("JWTSettings");
+var secretKey = jwtSettings["JWT_Secret"];
 
+if(string.IsNullOrEmpty(secretKey))
+{
+    throw new InvalidOperationException("Key for JWT authentication is not configured or is empty");
+}
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -24,13 +33,12 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JWTSettings:JWT_Issuer"],
-        ValidAudience = builder.Configuration["JWTSettings:JWT_Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWTSettings:JWT_Secret"]))
+        ValidIssuer = jwtSettings["JWT_Issuer"],
+        ValidAudience = jwtSettings["JWT_Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
 });
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
