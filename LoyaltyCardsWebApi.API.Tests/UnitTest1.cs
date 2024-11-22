@@ -1,4 +1,4 @@
-namespace LoyaltyCardsWebApi.Tests;
+namespace LoyaltyCardsWebApi.API.Tests;
 
 public class Tests
 {
