@@ -25,7 +25,7 @@ public class JwtService : IJwtService
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
         var expirationMinutes = 0.0;
-        if(double.TryParse(jwtSettings["ExpirationMinutes"], out double parsedExpirationMinutes))
+        if(double.TryParse(jwtSettings["JWT_ExpirationMinutes"], out double parsedExpirationMinutes))
         {
             expirationMinutes = parsedExpirationMinutes;
         }
