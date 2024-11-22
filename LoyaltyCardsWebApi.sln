@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.002.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LoyaltyCardsWebApi", "LoyaltyCardsWebApi.API\LoyaltyCardsWebApi.API.csproj", "{A921910B-6B2E-4976-B900-E3C2F0FC2EF2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LoyaltyCardsWebApi.API", "LoyaltyCardsWebApi.API\LoyaltyCardsWebApi.API.csproj", "{A921910B-6B2E-4976-B900-E3C2F0FC2EF2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltyCardsWebApi.Tests", "LoyaltyCardsWebApi.Tests\LoyaltyCardsWebApi.Tests.csproj", "{0CA7F2F6-C39B-4959-B1DB-5F1E0B7E1AB5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LoyaltyCardsWebApi.API.Tests", "LoyaltyCardsWebApi.API.Tests\LoyaltyCardsWebApi.API.Tests.csproj", "{0CA7F2F6-C39B-4959-B1DB-5F1E0B7E1AB5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
