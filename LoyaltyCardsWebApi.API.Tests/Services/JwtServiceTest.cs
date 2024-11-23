@@ -1,5 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Moq;
 
 namespace LoyaltyCardsWebApi.API.Tests.Services;
@@ -29,12 +32,33 @@ public class JwtServiceTest
         var userId = "123";
         var userEmail = "user123@test.com";
 
-        var token = _jwtService?.GenerateToken(userId, userEmail);
+        var validationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "TestIssuer",
+            ValidAudience = "TestAudience",
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("SecretKey123456SecretKey123456ab"))
+        };
 
-        Console.WriteLine(token);
+        var token = _jwtService?.GenerateToken(userId, userEmail);
+        SecurityToken jwt;
+        bool isValid = true;
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+            jwt = (JwtSecurityToken)validatedToken;
+        } catch (SecurityTokenValidationException ex)
+        {
+            isValid = false;
+        }
 
         Assert.IsNotNull(token);
         Assert.IsNotEmpty(token);
+        Assert.IsTrue(isValid);
 
     }
 
