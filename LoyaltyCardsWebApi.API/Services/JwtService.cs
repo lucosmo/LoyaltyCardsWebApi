@@ -18,9 +18,10 @@ public class JwtService : IJwtService
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["JWT_Secret"];
-        if(string.IsNullOrEmpty(secretKey))
+        int minSecretKeyLength = 32;
+        if(string.IsNullOrEmpty(secretKey) || secretKey.Length < minSecretKeyLength)
         {
-            throw new InvalidOperationException("Key for JWT authentication is not configured or is empty");
+            throw new InvalidOperationException("Key for JWT authentication is not configured, is empty or not long enough");
         }
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
