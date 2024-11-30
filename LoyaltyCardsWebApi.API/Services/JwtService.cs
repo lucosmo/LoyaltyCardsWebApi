@@ -18,22 +18,14 @@ public class JwtService : IJwtService
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["JWT_Secret"];
+        var expirationMinutes = jwtSettings["JWT_ExpirationMinutes"];
         int minSecretKeyLength = 32;
-        if(string.IsNullOrEmpty(secretKey) || secretKey.Length < minSecretKeyLength)
-        {
-            throw new InvalidOperationException("Key for JWT authentication is not configured, is empty or not long enough");
-        }
+        
+        VerifyParameters(userId, userEmail, secretKey, expirationMinutes, minSecretKeyLength);
+        
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
-        var expirationMinutes = 0.0;
-        if(double.TryParse(jwtSettings["JWT_ExpirationMinutes"], out double parsedExpirationMinutes))
-        {
-            expirationMinutes = parsedExpirationMinutes;
-        }
-        else
-        {
-            throw new InvalidOperationException("Wrong expiration time set for token");
-        }
+        double.TryParse(expirationMinutes, out var expirationTime);
 
         var claims = new List<Claim>
         {
@@ -46,9 +38,34 @@ public class JwtService : IJwtService
             issuer: jwtSettings["JWT_Issuer"],
             audience: jwtSettings["JWT_Audience"],
             signingCredentials: credentials,
-            expires: DateTime.UtcNow.AddMinutes(expirationMinutes)
+            expires: DateTime.UtcNow.AddMinutes(expirationTime)
         );
 
         return new JwtSecurityTokenHandler().WriteToken(jwtToken);
+    }
+
+    private void VerifyParameters(string userId, string userEmail, string secretKey, string expTime, int minSecretKeyLength)
+    {
+        if(string.IsNullOrEmpty(secretKey) || secretKey.Length < minSecretKeyLength)
+        {
+            throw new InvalidOperationException("Key for JWT authentication is not configured, is empty or not long enough");
+        }
+        if(string.IsNullOrEmpty(expTime) || IsExpirationTimeDouble(expTime ?? string.Empty,out double expirationTime) == false)
+        {
+            throw new InvalidOperationException("Wrong expiration time set for token");
+        }
+        if(string.IsNullOrEmpty(userId) || IsUserIdInteger(userId) == false || string.IsNullOrEmpty(userEmail))
+        {
+            throw new InvalidOperationException("Can't generate token without valid parameters");
+        }
+    }
+    private bool IsUserIdInteger(string userId)
+    {
+        return int.TryParse(userId, out int convertedInt) && convertedInt >= 0;
+    }
+
+    private bool IsExpirationTimeDouble(string expTime, out double expirationTime)
+    {
+        return double.TryParse(expTime, out expirationTime) && expirationTime > 0;
     }
 }
