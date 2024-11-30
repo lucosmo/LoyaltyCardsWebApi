@@ -12,12 +12,20 @@ public class JwtServiceTest
     private Mock<IConfiguration>? _configuration;
     private JwtService? _jwtService;
     private TokenValidationParameters? _validationParameters;
+    private string _userId = "123"; 
+    private string _userEmail = "user123@test.com";
+
     [SetUp]
     public void SetUp()
     {
         _configuration = new Mock<IConfiguration>();
         _jwtService = new JwtService(_configuration.Object);
-        _validationParameters = new TokenValidationParameters
+        _validationParameters = CreateValidationParameters();
+    }
+
+    private TokenValidationParameters CreateValidationParameters()
+    {
+        return new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
@@ -29,21 +37,23 @@ public class JwtServiceTest
         };
     }
 
-    [Test]
-    public void GenerateToken_ValidInput_ReturnsNotEmptyToken()
+    private void SetupJwtSettings(string secretKey, string testIssuer, string testAudience, string expirationMinutes)
     {
         var jwtSettingSection = new Mock<IConfigurationSection>();
-        jwtSettingSection.Setup(x => x["JWT_Secret"]).Returns("SecretKey123456SecretKey123456ab");
-        jwtSettingSection.Setup(x => x["JWT_Issuer"]).Returns("TestIssuer");
-        jwtSettingSection.Setup(x => x["JWT_Audience"]).Returns("TestAudience");
-        jwtSettingSection.Setup(x => x["JWT_ExpirationMinutes"]).Returns("2");
+        jwtSettingSection.Setup(x => x["JWT_Secret"]).Returns(secretKey);
+        jwtSettingSection.Setup(x => x["JWT_Issuer"]).Returns(testIssuer);
+        jwtSettingSection.Setup(x => x["JWT_Audience"]).Returns(testAudience);
+        jwtSettingSection.Setup(x => x["JWT_ExpirationMinutes"]).Returns(expirationMinutes);
 
         _configuration?.Setup(x => x.GetSection("JwtSettings")).Returns(jwtSettingSection.Object);
+    }
 
-        var userId = "123";
-        var userEmail = "user123@test.com";
-
-        var token = _jwtService?.GenerateToken(userId, userEmail);
+    [Test]
+    public void GenerateToken_ValidInput_ReturnsNotNullAndNotEmptyToken()
+    {
+        SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        
+        var token = _jwtService?.GenerateToken(_userId, _userEmail);
         
         Assert.IsNotNull(token);
         Assert.IsNotEmpty(token);
@@ -52,22 +62,13 @@ public class JwtServiceTest
     [Test]
     public void GenerateToken_ValidInput_ValidatesTokenCorrectly()
     {
-        var jwtSettingSection = new Mock<IConfigurationSection>();
-        jwtSettingSection.Setup(x => x["JWT_Secret"]).Returns("SecretKey123456SecretKey123456ab");
-        jwtSettingSection.Setup(x => x["JWT_Issuer"]).Returns("TestIssuer");
-        jwtSettingSection.Setup(x => x["JWT_Audience"]).Returns("TestAudience");
-        jwtSettingSection.Setup(x => x["JWT_ExpirationMinutes"]).Returns("2");
-
-        _configuration?.Setup(x => x.GetSection("JwtSettings")).Returns(jwtSettingSection.Object);
-
-        var userId = "123";
-        var userEmail = "user123@test.com";
-
+        SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        
         SecurityToken validatedToken;
         bool isTokenValid = false;
         var tokenHandler = new JwtSecurityTokenHandler();
 
-        var token = _jwtService?.GenerateToken(userId, userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail);
         
         try
         {
@@ -85,41 +86,24 @@ public class JwtServiceTest
     [Test]
     public void GenerateToken_ValidInput_ContainsCorrectClaims()
     {
-        var jwtSettingSection = new Mock<IConfigurationSection>();
-        jwtSettingSection.Setup(x => x["JWT_Secret"]).Returns("SecretKey123456SecretKey123456ab");
-        jwtSettingSection.Setup(x => x["JWT_Issuer"]).Returns("TestIssuer");
-        jwtSettingSection.Setup(x => x["JWT_Audience"]).Returns("TestAudience");
-        jwtSettingSection.Setup(x => x["JWT_ExpirationMinutes"]).Returns("2");
+        SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
 
-        _configuration?.Setup(x => x.GetSection("JwtSettings")).Returns(jwtSettingSection.Object);
-
-        var userId = "123";
-        var userEmail = "user123@test.com";
-
-        var token = _jwtService?.GenerateToken(userId, userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail);
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
 
-        Assert.That(jwtToken?.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value, Is.EqualTo(userId));
-        Assert.That(jwtToken?.Claims.First(x => x.Type == JwtRegisteredClaimNames.Email).Value, Is.EqualTo(userEmail));
+        Assert.That(jwtToken?.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value, Is.EqualTo(_userId));
+        Assert.That(jwtToken?.Claims.First(x => x.Type == JwtRegisteredClaimNames.Email).Value, Is.EqualTo(_userEmail));
     }
 
     [Test]
     public void GenerateToken_ValidInput_ContainsCorrectExpiration()
     {
-        var jwtSettingSection = new Mock<IConfigurationSection>();
-        jwtSettingSection.Setup(x => x["JWT_Secret"]).Returns("SecretKey123456SecretKey123456ab");
-        jwtSettingSection.Setup(x => x["JWT_Issuer"]).Returns("TestIssuer");
-        jwtSettingSection.Setup(x => x["JWT_Audience"]).Returns("TestAudience");
-        jwtSettingSection.Setup(x => x["JWT_ExpirationMinutes"]).Returns("2");
-
-        _configuration?.Setup(x => x.GetSection("JwtSettings")).Returns(jwtSettingSection.Object);
-
-        var userId = "123";
-        var userEmail = "user123@test.com";
+        SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        
         var expirationMinutes = 2;
 
-        var token = _jwtService?.GenerateToken(userId, userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail);
         var expectedExpirationTime = DateTime.UtcNow.AddMinutes(expirationMinutes);
         var timeTolerance = TimeSpan.FromSeconds(5);
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -131,17 +115,24 @@ public class JwtServiceTest
     [Test]
     public void GenerateToken_InvalidSecretKey_ThrowsInvalidOperationException()
     {
-        var jwtSettingSection = new Mock<IConfigurationSection>();
-        jwtSettingSection.Setup(x => x["JWT_Secret"]).Returns("InvalidSecretKey");
-        jwtSettingSection.Setup(x => x["JWT_Issuer"]).Returns("TestIssuer");
-        jwtSettingSection.Setup(x => x["JWT_Audience"]).Returns("TestAudience");
-        jwtSettingSection.Setup(x => x["JWT_ExpirationMinutes"]).Returns("2");
-
-        _configuration?.Setup(x => x.GetSection("JwtSettings")).Returns(jwtSettingSection.Object);
-
-        var userId = "123";
-        var userEmail = "user123@test.com";
+        SetupJwtSettings("InvalidSecretKey", "TestIssuer", "TestAudience", "2");      
+        
         var exeptionMessage = "Key for JWT authentication is not configured, is empty or not long enough";
+
+        InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(_userId, _userEmail));
+        Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
+    }
+
+    [Test]
+    [TestCase(null,"plwp@wopep.nl")]
+    [TestCase("","plwp@wopep.nl")]
+    [TestCase("1222","")]
+    [TestCase("11",null)]
+    [TestCase("-1223","plwp@wopep.nl")]
+    public void GenerateToken_NotValidEmailUserId_ThrowsInvalidOperationException(string userId, string userEmail)
+    {
+        var exeptionMessage = "Can't generate token without valid parameters";
+        SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
 
         InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
