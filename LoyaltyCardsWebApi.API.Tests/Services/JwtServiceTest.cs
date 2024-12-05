@@ -126,12 +126,22 @@ public class JwtServiceTest
     [Test]
     [TestCase(null,"plwp@wopep.nl")]
     [TestCase("","plwp@wopep.nl")]
+    [TestCase("-1223","plwp@wopep.nl")]
+    public void GenerateToken_NotValidUserId_ThrowsInvalidOperationException(string userId, string userEmail)
+    {
+        var exeptionMessage = "Can't generate token without valid user ID";
+        SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+
+        InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
+        Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
+    }
+
+    [Test]
     [TestCase("1222","")]
     [TestCase("11",null)]
-    [TestCase("-1223","plwp@wopep.nl")]
-    public void GenerateToken_NotValidEmailUserId_ThrowsInvalidOperationException(string userId, string userEmail)
+    public void GenerateToken_NotValidUserEmail_ThrowsInvalidOperationException(string userId, string userEmail)
     {
-        var exeptionMessage = "Can't generate token without valid parameters";
+        var exeptionMessage = "Can't generate token without valid email";
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
 
         InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
