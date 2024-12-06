@@ -117,7 +117,7 @@ public class JwtServiceTest
     {
         SetupJwtSettings("InvalidSecretKey", "TestIssuer", "TestAudience", "2");      
         
-        var exeptionMessage = "Key for JWT authentication is not configured, is empty or not long enough";
+        var exeptionMessage = "Key for JWT authentication is not configured, is empty or not long enough.";
 
         InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(_userId, _userEmail));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
@@ -129,7 +129,7 @@ public class JwtServiceTest
     [TestCase("-1223","plwp@wopep.nl")]
     public void GenerateToken_NotValidUserId_ThrowsInvalidOperationException(string userId, string userEmail)
     {
-        var exeptionMessage = "Can't generate token without valid user ID";
+        var exeptionMessage = "Can't generate token without valid user ID.";
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
 
         InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
@@ -141,7 +141,7 @@ public class JwtServiceTest
     [TestCase("11",null)]
     public void GenerateToken_NotValidUserEmail_ThrowsInvalidOperationException(string userId, string userEmail)
     {
-        var exeptionMessage = "Can't generate token without valid email";
+        var exeptionMessage = "Can't generate token without valid email.";
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
 
         InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
