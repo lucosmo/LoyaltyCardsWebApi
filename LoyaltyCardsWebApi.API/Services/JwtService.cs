@@ -1,51 +1,52 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using LoyalityCardsWebApi.API.Data.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace LoyaltyCardsWebApi.API.Services;
 
 public class JwtService : IJwtService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
     private const int MinSecretKeyLength = 32;
 
     public JwtService(IConfiguration configuration)
     {
-        _configuration = configuration;
+        _jwtSettings = GetJwtSettings(configuration);
     }
 
     public string GenerateToken(string userId, string userEmail)
     {
-        var jwtSettings = GetJwtSetting();
-        VerifyTokenParameters(userId, userEmail, jwtSettings.SecretKey, jwtSettings.ExpirationMinutes);
-        var credentials = CreateSigningCredentials(jwtSettings.SecretKey);
+        VerifyTokenParameters(userId, userEmail);
+        var credentials = CreateSigningCredentials(_jwtSettings.SecretKey);
         var claims = CreateClaims(userId, userEmail);
 
-        var jwtToken = CreateJwtToken(claims, jwtSettings, credentials);
+        var jwtToken = CreateJwtToken(claims, _jwtSettings, credentials);
         
         return SerializeJwtToken(jwtToken);
     }
 
-    private (string? SecretKey, string? ExpirationMinutes, string? Issuer, string? Audience) GetJwtSetting()
+    private JwtSettings GetJwtSettings(IConfiguration configuration)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        return (
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        return new JwtSettings(
             SecretKey: jwtSettings["JWT_Secret"] ?? string.Empty,
-            ExpirationMinutes: jwtSettings["JWT_ExpirationMinutes"],
-            Issuer: jwtSettings["JWT_Issuer"],
-            Audience: jwtSettings["JWT_Audience"]
+            ExpirationMinutes: jwtSettings["JWT_ExpirationMinutes"] ?? string.Empty,
+            Issuer: jwtSettings["JWT_Issuer"] ?? string.Empty,
+            Audience: jwtSettings["JWT_Audience"] ?? string.Empty
         );
     }
 
-    private void VerifyTokenParameters(string? userId, string? userEmail, string? secretKey, string? expTime)
+    private void VerifyTokenParameters(string? userId, string? userEmail)
     {
         string message = string.Empty;
-        if(IsInvalidSecretKey(secretKey))
+
+        if(IsInvalidSecretKey(_jwtSettings.SecretKey))
         {
             message = "Key for JWT authentication is not configured, is empty or not long enough.";
         }
-        if (IsInvalidExpirationTime(expTime, out _))
+        if (IsInvalidExpirationTime(_jwtSettings.ExpirationMinutes, out _))
         {
             message = "Wrong expiration time set for token.";
         }
@@ -59,8 +60,9 @@ public class JwtService : IJwtService
         }
         if (!string.IsNullOrEmpty(message))
         {
-            throw new InvalidOperationException(message);
+            throw new ArgumentException(message);
         }
+
     }
     
     private bool IsInvalidSecretKey(string? secretKey)
@@ -80,7 +82,7 @@ public class JwtService : IJwtService
 
     private bool IsInvalidEmail(string? userEmail)
     {
-        return string.IsNullOrEmpty(userEmail);
+        return string.IsNullOrWhiteSpace(userEmail);
     }
 
     private SigningCredentials CreateSigningCredentials(string secretKey)
@@ -88,6 +90,7 @@ public class JwtService : IJwtService
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         return new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
     }
+
     private IEnumerable<Claim> CreateClaims(string userId, string userEmail)
     {
         return new List<Claim>
@@ -98,7 +101,7 @@ public class JwtService : IJwtService
         };
     }
 
-    private SecurityToken CreateJwtToken(IEnumerable<Claim> claims, (string? SecretKey, string? ExpirationMinutes, string? Issuer, string? Audience) jwtSettings, SigningCredentials credentials)
+    private SecurityToken CreateJwtToken(IEnumerable<Claim> claims, JwtSettings jwtSettings, SigningCredentials credentials)
     {
         double.TryParse(jwtSettings.ExpirationMinutes, out var expirationTime);
         
