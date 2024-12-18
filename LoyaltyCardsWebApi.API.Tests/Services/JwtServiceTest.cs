@@ -7,6 +7,7 @@ using Moq;
 
 namespace LoyaltyCardsWebApi.API.Tests.Services;
 
+[TestFixture]
 public class JwtServiceTest
 {
     private Mock<IConfiguration>? _configuration;
@@ -19,8 +20,7 @@ public class JwtServiceTest
     public void SetUp()
     {
         _configuration = new Mock<IConfiguration>();
-        _jwtService = new JwtService(_configuration.Object);
-        _validationParameters = CreateValidationParameters();
+        _validationParameters = CreateValidationParameters();   
     }
 
     private TokenValidationParameters CreateValidationParameters()
@@ -48,10 +48,20 @@ public class JwtServiceTest
         _configuration?.Setup(x => x.GetSection("JwtSettings")).Returns(jwtSettingSection.Object);
     }
 
+    private void CreateJwtService()
+    {
+        if(_configuration == null)
+        {
+            throw new ArgumentException("_configuration is not initialized.");
+        }
+        _jwtService = new JwtService(_configuration.Object);
+    }
+
     [Test]
     public void GenerateToken_ValidInput_ReturnsNotNullAndNotEmptyToken()
     {
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        CreateJwtService();
         
         var token = _jwtService?.GenerateToken(_userId, _userEmail);
         
@@ -63,7 +73,8 @@ public class JwtServiceTest
     public void GenerateToken_ValidInput_ValidatesTokenCorrectly()
     {
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
-        
+        CreateJwtService();
+
         SecurityToken validatedToken;
         bool isTokenValid = false;
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -87,6 +98,7 @@ public class JwtServiceTest
     public void GenerateToken_ValidInput_ContainsCorrectClaims()
     {
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        CreateJwtService();
 
         var token = _jwtService?.GenerateToken(_userId, _userEmail);
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -100,7 +112,8 @@ public class JwtServiceTest
     public void GenerateToken_ValidInput_ContainsCorrectExpiration()
     {
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
-        
+        CreateJwtService();
+
         var expirationMinutes = 2;
 
         var token = _jwtService?.GenerateToken(_userId, _userEmail);
@@ -116,10 +129,11 @@ public class JwtServiceTest
     public void GenerateToken_InvalidSecretKey_ThrowsInvalidOperationException()
     {
         SetupJwtSettings("InvalidSecretKey", "TestIssuer", "TestAudience", "2");      
-        
+        CreateJwtService();
+
         var exeptionMessage = "Key for JWT authentication is not configured, is empty or not long enough.";
 
-        InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(_userId, _userEmail));
+        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(_userId, _userEmail));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
     }
 
@@ -131,8 +145,9 @@ public class JwtServiceTest
     {
         var exeptionMessage = "Can't generate token without valid user ID.";
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        CreateJwtService();
 
-        InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
+        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(userId, userEmail));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
     }
 
@@ -143,8 +158,9 @@ public class JwtServiceTest
     {
         var exeptionMessage = "Can't generate token without valid email.";
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
+        CreateJwtService();
 
-        InvalidOperationException? testEx = Assert.Throws<InvalidOperationException>(() => _jwtService?.GenerateToken(userId, userEmail));
+        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(userId, userEmail));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
     }
 
