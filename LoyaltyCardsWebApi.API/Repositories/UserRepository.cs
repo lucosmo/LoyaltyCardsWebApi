@@ -1,3 +1,4 @@
+using LoyalityCardsWebApi.API.Data.DTOs;
 using LoyalityCardsWebApi.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,6 +38,12 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetUserByIdAsync(int id)
     {
         User? user = await _appDbContext.Users.FindAsync(id);
+        return user;
+    }
+
+    public async Task<User?> GetUserByEmailAsync(LoginDto loginDto)
+    {
+        User? user = await _appDbContext.Users.FirstOrDefaultAsync(x => x.Email.Equals(loginDto.Email));
         return user;
     }
 

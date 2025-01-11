@@ -7,10 +7,12 @@ namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public UserService(IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, IHttpContextAccessor httpContextAccessor)
     {
         _userRepository = userRepository;
+        _httpContextAccessor = httpContextAccessor;
     }
     public async Task<User> CreateUserAsync(CreateUserDto newUser)
     {
@@ -28,6 +30,12 @@ public class UserService : IUserService
     public async Task<User?> GetUserByIdAsync(int id)
     {
         var user = await _userRepository.GetUserByIdAsync(id);
+        return user;
+    }
+
+    public async Task<User?> GetUserByEmailAsync(LoginDto loginDto)
+    {
+        var user = await _userRepository.GetUserByEmailAsync(loginDto);
         return user;
     }
     public async Task<User?> DeleteAsync(int id)
@@ -60,5 +68,15 @@ public class UserService : IUserService
 
         var isUserUpdated = await _userRepository.UpdateAsync(existingUser);
         return isUserUpdated;
+    }
+
+    public async Task<bool> ValidateCredentialsAsync(LoginDto loginDto)
+    {
+        var validUser = await _userRepository.GetUserByEmailAsync(loginDto);
+        if (validUser == null || validUser.Password != loginDto.Password)
+        {
+            return false;
+        }
+        return true;
     }
 }
