@@ -2,6 +2,7 @@ using LoyalityCardsWebApi.API.Data.DTOs;
 using LoyalityCardsWebApi.API.Models;
 using LoyalityCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoyalityCardsWebApi.API.Controllers;
@@ -21,7 +22,7 @@ public class UsersController : ControllerBase
         var createdUser = await _userService.CreateUserAsync(newUser);
         return Ok(createdUser);
     }
-
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllUsers()
     {
@@ -31,6 +32,18 @@ public class UsersController : ControllerBase
             return NotFound();
         }
         return Ok(users);
+    }
+
+    [Authorize]
+    [HttpGet("myaccount")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var user = await _userService.GetCurrentUserAsync();
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+        return Ok(user);
     }
 
     [HttpGet("{id}")]
