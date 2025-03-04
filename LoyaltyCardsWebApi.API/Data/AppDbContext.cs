@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
     }
     public DbSet<Card> Cards => Set<Card>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<RevokedToken> RevokedToken => Set<RevokedToken>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
