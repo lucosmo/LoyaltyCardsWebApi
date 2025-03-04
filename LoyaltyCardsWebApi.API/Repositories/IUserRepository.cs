@@ -5,7 +5,7 @@ namespace LoyalityCardsWebApi.API.Repositories;
 public interface IUserRepository
 {
     Task<User?> GetUserByIdAsync(int id);
-    Task<User?> GetUserByEmailAsync(LoginDto loginDto);
+    Task<User?> GetUserByEmailAsync(string email);
     Task<User> CreateAsync(User newUser);
     Task<bool> UpdateAsync(User user);
     Task<User?> DeleteAsync(int id);

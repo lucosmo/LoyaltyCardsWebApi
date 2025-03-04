@@ -41,9 +41,9 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public async Task<User?> GetUserByEmailAsync(LoginDto loginDto)
+    public async Task<User?> GetUserByEmailAsync(string email)
     {
-        User? user = await _appDbContext.Users.FirstOrDefaultAsync(x => x.Email.Equals(loginDto.Email));
+        User? user = await _appDbContext.Users.FirstOrDefaultAsync(x => x.Email.Equals(email));
         return user;
     }
 
