@@ -88,21 +88,25 @@ public class AuthService : IAuthService
 
     public async Task<Result<string>> AddRevokedTokenAsync(string token, DateTime expiryDate, int userId)
     {
-        try
+        var revokedToken = await _authRepository.AddRevokedTokenAsync(token, expiryDate, userId);
+        if (revokedToken == null)
         {
-            var revokedToken = await _authRepository.AddRevokedTokenAsync(token, expiryDate, userId);
-            if (revokedToken == null)
-            {
-                return Result<string>.Fail("Failed to revoke token. Repository returned null.");
-            }
-            
-            return Result<string>.Ok(revokedToken.Token);
-        }
-        catch (Exception ex)
-        {
-            return Result<string>.Fail($"An error occurred: {ex.Message}");
+            return Result<string>.Fail("Failed to revoke token. Repository returned null.");
         }
         
+        return Result<string>.Ok(revokedToken.Token);        
+    }
+
+    public async Task<bool> IsTokenRevokedAsync(string token)
+    {
+        var isRevokedResult = await _authRepository.IsTokenRevokedAsync(token);
+        return isRevokedResult;
+    }
+
+    public async Task<Result<bool>> RevokeAllTokensForUserAsync(int userId)
+    {
+        await _authRepository.RevokeAllTokensForUserAsync(userId);
+        return Result<bool>.Ok(true);
     }
 
 }

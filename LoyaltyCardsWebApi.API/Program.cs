@@ -6,6 +6,7 @@ using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using LoyalityCardsWebApi.API.Middleware;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -60,6 +61,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<TokenRevocationMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

@@ -1,10 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
 using LoyalityCardsWebApi.API.Data.DTOs;
 using LoyalityCardsWebApi.API.Models;
 using LoyalityCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LoyalityCardsWebApi.API.Controllers;
+namespace LoyaltyCardsWebApi.API.Controllers;
 
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
@@ -22,5 +25,47 @@ public class AuthController : ControllerBase
     {
         var token = await _authService.LoginAsync(loginDto);
         return Ok(new {Token = token});
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        var tokenResult = _authService.GetTokenAuthHeader();
+        if (!tokenResult.Success || string.IsNullOrEmpty(tokenResult.Value))
+        {
+            return BadRequest(tokenResult.Error);
+        }
+
+        var userIdResult = _authService.GetUserId();
+        if (!userIdResult.Success)
+        {
+            return BadRequest(userIdResult.Error);
+        }
+
+        var expiryDateResult = _authService.GetTokenExpiryDate();
+        if (!expiryDateResult.Success)
+        {
+            return BadRequest(expiryDateResult.Error);
+        }
+    
+        var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, expiryDateResult.Value, userIdResult.Value);
+        if (!revokeResult.Success)
+        {
+            return BadRequest(revokeResult.Error);
+        }
+
+        return Ok(new {Message = "Successfully logged out"});
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] CreateUserDto newUserDto)
+    {
+        var result = await _authService.RegisterAsync(newUserDto);
+        if (result.Success == false)
+        {
+            return BadRequest(result.Error);
+        }
+        return Ok(new {Message = "User registered successfully", User = result.Value});
     }
 }

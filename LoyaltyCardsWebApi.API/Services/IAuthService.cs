@@ -9,5 +9,6 @@ public interface IAuthService
     Result<int> GetUserId();
     Result<DateTime> GetTokenExpiryDate();
     Task<Result<string>> AddRevokedTokenAsync(string token, DateTime expiryDate, int userId);
+    Task<bool> IsTokenRevokedAsync(string token);
 
 }
