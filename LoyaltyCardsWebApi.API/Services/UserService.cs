@@ -1,16 +1,18 @@
 using LoyalityCardsWebApi.API.Data.DTOs;
 using LoyalityCardsWebApi.API.Models;
 using LoyalityCardsWebApi.API.Repositories;
-using LoyaltyCardsWebApi.API.Services;
+using System.Security.Claims;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public UserService(IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, IHttpContextAccessor httpContextAccessor)
     {
         _userRepository = userRepository;
+        _httpContextAccessor = httpContextAccessor;
     }
     public async Task<User> CreateUserAsync(CreateUserDto newUser)
     {
@@ -25,11 +27,29 @@ public class UserService : IUserService
         return createdUser;
     }
 
+    public async Task<User?> GetCurrentUserAsync()
+    {
+        var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        {
+            return null;
+        }
+
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        return user;
+    }
     public async Task<User?> GetUserByIdAsync(int id)
     {
         var user = await _userRepository.GetUserByIdAsync(id);
         return user;
     }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        var user = await _userRepository.GetUserByEmailAsync(email);
+        return user;
+    }
+      
     public async Task<User?> DeleteAsync(int id)
     {
         var userToDelete = await _userRepository.DeleteAsync(id);       
