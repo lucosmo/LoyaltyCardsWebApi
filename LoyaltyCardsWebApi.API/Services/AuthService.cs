@@ -30,6 +30,10 @@ public class AuthService : IAuthService
         }
         
         var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email);
+        if (string.IsNullOrEmpty(token))
+        {
+            return Result<string>.Fail("Token generation failed");
+        }
         return Result<string>.Ok(token);
     }
 
@@ -49,6 +53,10 @@ public class AuthService : IAuthService
             AccountCreatedDate = DateTime.UtcNow  
         };
         var createdUser = await _userRepository.CreateAsync(newUserModel);
+        if (createdUser == null)
+        {
+            return Result<string>.Fail($"Registration failed for this email: {newUserDto.Email}");
+        }
         return Result<string>.Ok($"User {createdUser.UserName} registered successfully");
     }
 
