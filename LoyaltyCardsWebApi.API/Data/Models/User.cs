@@ -12,22 +12,4 @@ public class User
     public DateTime AccountCreatedDate { get; set;}
     public List<Card>? Cards {get; set;}
     public string? Settings { get; set;}
-
-    public User()
-    {
-        
-    }
-
-    public User(int id, string userName, string password, string email, string firstName, string lastName, DateTime accountCreatedDate, List<Card> cards, string settings)
-    {
-        Id = id;
-        UserName = userName;
-        Password = password;
-        Email = email;
-        FirstName = firstName;
-        LastName = lastName;
-        AccountCreatedDate = accountCreatedDate;
-        Cards = cards;
-        Settings = settings;
-    }
 }
