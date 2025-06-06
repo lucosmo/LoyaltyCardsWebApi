@@ -6,6 +6,7 @@ using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace LoyaltyCardsWebApi.API.Controllers;
 
@@ -23,82 +24,65 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
-        try
+        if (!ModelState.IsValid)
         {
-            var token = await _authService.LoginAsync(loginDto);
-            if (token.Success == false)
-            {
-                return BadRequest(token.Error);
-            }
-            
-            return Ok(new {Token = token});
+            return BadRequest(InvalidCredentialsMessage);
         }
-        catch (Exception ex)
+
+        var tokenResult = await _authService.LoginAsync(loginDto);
+        if (!tokenResult.Success)
         {
-            return StatusCode(500, "An unexpected error occurred during login.");
-        }  
+            return BadRequest(tokenResult.Error);
+        }
+        
+        return Ok(new {Token = tokenResult});  
     }
 
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        try
+        var tokenResult = _authService.GetTokenAuthHeader();
+        if (!tokenResult.Success || string.IsNullOrEmpty(tokenResult.Value))
         {
-            var tokenResult = _authService.GetTokenAuthHeader();
-            if (!tokenResult.Success || string.IsNullOrEmpty(tokenResult.Value))
-            {
-                return BadRequest(tokenResult.Error);
-            }
-
-            var userIdResult = _authService.GetUserId();
-            if (!userIdResult.Success)
-            {
-                return BadRequest(userIdResult.Error);
-            }
-
-            var expiryDateResult = _authService.GetTokenExpiryDate();
-            if (!expiryDateResult.Success)
-            {
-                return BadRequest(expiryDateResult.Error);
-            }
-        
-            var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, expiryDateResult.Value, userIdResult.Value);
-            if (!revokeResult.Success)
-            {
-                return BadRequest(revokeResult.Error);
-            }
-
-            return Ok(new {Message = "Successfully logged out"});
+            return BadRequest(tokenResult.Error);
         }
-        catch (Exception ex)
+
+        var userIdResult = _authService.GetUserId();
+        if (!userIdResult.Success)
         {
-            return StatusCode(500, "An unexpected error occurred during logout.");
+            return BadRequest(userIdResult.Error);
         }
+
+        var expiryDateResult = _authService.GetTokenExpiryDate();
+        if (!expiryDateResult.Success)
+        {
+            return BadRequest(expiryDateResult.Error);
+        }
+    
+        var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, expiryDateResult.Value, userIdResult.Value);
+        if (!revokeResult.Success)
+        {
+            return BadRequest(revokeResult.Error);
+        }
+
+        return Ok(new {Message = "Successfully logged out"});
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] CreateUserDto newUserDto)
     {
-        try
+        if (!ModelState.IsValid)
         {
-            if (ModelState.IsValid == false)
-            {
-                return BadRequest("Invalid registration data.");
-            }
-
-            var result = await _authService.RegisterAsync(newUserDto);
-            if (result.Success == false)
-            {
-                return BadRequest(result.Error);
-            }
-
-            return Ok(new {Message = "User registered successfully", User = result.Value});
+            return BadRequest("Invalid registration data.");
         }
-        catch (Exception ex)
+
+        var result = await _authService.RegisterAsync(newUserDto);
+        if (!result.Success)
         {
-            return StatusCode(500, "An unexpected error occurred during registration.");
+            return BadRequest(result.Error);
         }
-        
+
+        return Ok(new {Message = "User registered successfully", User = result.Value});              
     }
 }

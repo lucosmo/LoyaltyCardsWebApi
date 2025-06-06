@@ -15,10 +15,10 @@ public class AuthService : IAuthService
 
     public AuthService(IHttpContextAccessor httpContextAccessor, IAuthRepository authRepository, IUserRepository userRepository, IJwtService jwtService)
     {
-        _httpContextAccessor = httpContextAccessor;
-        _authRepository = authRepository;
-        _userRepository = userRepository;
-        _jwtService = jwtService;
+        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+        _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
     }
     public async Task<Result<string>> LoginAsync(LoginDto loginDto)
     {
