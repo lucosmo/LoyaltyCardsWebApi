@@ -19,15 +19,24 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto newUser)
     {
-        var createdUser = await _userService.CreateUserAsync(newUser);
-        return Ok(createdUser);
+        if (!ModelState.IsValid)
+        {
+            return BadRequest("Wrong details");
+        }
+        var result = await _userService.CreateUserAsync(newUser);
+        if (!result.Success)
+        {
+            return BadRequest(result.Value);
+        }
+
+        return Ok(result.Value);
     }
     [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllUsers()
     {
         var users = await _userService.GetAllUsersAsync();
-        if (users == null)
+        if (!users.Success)
         {
             return NotFound();
         }
@@ -39,7 +48,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetCurrentUser()
     {
         var user = await _userService.GetCurrentUserAsync();
-        if (user == null)
+        if (!user.Success)
         {
             return Unauthorized();
         }
@@ -50,7 +59,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetUserById(int id)
     {
         var user = await _userService.GetUserByIdAsync(id);
-        if (user == null)
+        if (!user.Success)
         {
             return NotFound();
         }
@@ -61,7 +70,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> DeleteUserById(int id)
     {
         var user = await _userService.DeleteAsync(id);
-        if (user == null)
+        if (!user.Success)
         {
             return NotFound();
         }
@@ -72,7 +81,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> UpdateUser(int id, [FromBody]UpdatedUserDto updatedUser)
     {
         var isUserUpdated = await _userService.UpdateUserAsync(id, updatedUser);
-        if (isUserUpdated == false)
+        if (!isUserUpdated.Success)
         {
             return NotFound();
         }

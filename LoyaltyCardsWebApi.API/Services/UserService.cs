@@ -2,6 +2,7 @@ using LoyalityCardsWebApi.API.Data.DTOs;
 using LoyalityCardsWebApi.API.Models;
 using LoyalityCardsWebApi.API.Repositories;
 using System.Security.Claims;
+using LoyaltyCardsWebApi.API.Extensions;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
@@ -11,10 +12,10 @@ public class UserService : IUserService
 
     public UserService(IUserRepository userRepository, IHttpContextAccessor httpContextAccessor)
     {
-        _userRepository = userRepository;
-        _httpContextAccessor = httpContextAccessor;
+        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));;
     }
-    public async Task<User> CreateUserAsync(CreateUserDto newUser)
+    public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
     {
         var newUserModel = new User
         {
@@ -24,50 +25,76 @@ public class UserService : IUserService
             AccountCreatedDate = DateTime.UtcNow  
         };
         var createdUser = await _userRepository.CreateAsync(newUserModel);
-        return createdUser;
+        return Result<UserDto>.Ok(createdUser.ToDto());
     }
 
-    public async Task<User?> GetCurrentUserAsync()
+    public async Task<Result<UserDto>> GetCurrentUserAsync()
     {
         var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
         if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
         {
-            return null;
+            return Result<UserDto>.Fail("User ID not found");
         }
 
         var user = await _userRepository.GetUserByIdAsync(userId);
-        return user;
+
+        if (user == null)
+        {
+            return Result<UserDto>.Fail("User not found");
+        }
+
+        return Result<UserDto>.Ok(user.ToDto());
     }
-    public async Task<User?> GetUserByIdAsync(int id)
+    public async Task<Result<UserDto>> GetUserByIdAsync(int id)
     {
         var user = await _userRepository.GetUserByIdAsync(id);
-        return user;
+
+        if (user == null)
+        {
+            return Result<UserDto>.Fail("User not found");
+        }
+
+        return Result<UserDto>.Ok(user.ToDto());
     }
 
-    public async Task<User?> GetUserByEmailAsync(string email)
+    public async Task<Result<UserDto>> GetUserByEmailAsync(string email)
     {
         var user = await _userRepository.GetUserByEmailAsync(email);
-        return user;
+        
+        if (user == null)
+        {
+            return Result<UserDto>.Fail("User not found");
+        }
+
+        return Result<UserDto>.Ok(user.ToDto());
     }
       
-    public async Task<User?> DeleteAsync(int id)
+    public async Task<Result<UserDto>> DeleteAsync(int id)
     {
-        var userToDelete = await _userRepository.DeleteAsync(id);       
-        return userToDelete;
+        var user = await _userRepository.DeleteAsync(id);
+
+        if (user == null)
+        {
+            return Result<UserDto>.Fail("User not found");
+        }
+
+        return Result<UserDto>.Ok(user.ToDto());
+
     }
 
-    public async Task<List<User>?> GetAllUsersAsync()
+    public async Task<Result<List<UserDto>>> GetAllUsersAsync()
     {
-        var users = await _userRepository.GetAllUsersAsync();
-        return users;
+        var users = await _userRepository.GetAllUsersAsync() ?? new List<User>();
+        var userDtos = users.Select(u => u.ToDto()).ToList();
+        return Result<List<UserDto>>.Ok(userDtos);
     }
 
-    public async Task<bool> UpdateUserAsync(int id, UpdatedUserDto updatedUser)
+    public async Task<Result<bool>> UpdateUserAsync(int id, UpdatedUserDto updatedUser)
     {
         var existingUser = await _userRepository.GetUserByIdAsync(id); 
         if (existingUser == null || updatedUser == null)
         {
-            return false;
+            return Result<bool>.Fail("");
         }     
         if (updatedUser.Email != null && updatedUser.Email != existingUser.Email)
         {
@@ -79,6 +106,6 @@ public class UserService : IUserService
         }
 
         var isUserUpdated = await _userRepository.UpdateAsync(existingUser);
-        return isUserUpdated;
+        return Result<bool>.Ok(isUserUpdated);
     }
 }
