@@ -1,6 +1,6 @@
 using LoyaltyCardsWebApi.API.Services;
 
-namespace LoyalityCardsWebApi.API.Middleware;
+namespace LoyaltyCardsWebApi.API.Middleware;
 
 public class TokenRevocationMiddleware
 {

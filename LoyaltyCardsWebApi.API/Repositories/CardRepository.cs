@@ -1,6 +1,6 @@
-using LoyalityCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Models;
 
-namespace LoyalityCardsWebApi.API.Repositories;
+namespace LoyaltyCardsWebApi.API.Repositories;
 
 public class CardRepository : ICardRepository
 {

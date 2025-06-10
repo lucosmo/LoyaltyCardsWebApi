@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace LoyalityCardsWebApi.API.Data.DTOs;
+namespace LoyaltyCardsWebApi.API.Data.DTOs;
 public class CreateUserDto
     {
         public required string UserName { get; set; }

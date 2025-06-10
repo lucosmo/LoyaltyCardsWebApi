@@ -1,4 +1,4 @@
-using LoyalityCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Data.DTOs;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public interface IAuthService

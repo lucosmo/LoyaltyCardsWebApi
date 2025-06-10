@@ -1,5 +1,5 @@
-using LoyalityCardsWebApi.API.Data.DTOs;
-using LoyalityCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Models;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public interface IUserService

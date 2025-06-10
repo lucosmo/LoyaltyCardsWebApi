@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace LoyalityCardsWebApi.API.Data.DTOs;
+namespace LoyaltyCardsWebApi.API.Data.DTOs;
 public class UpdatedUserDto
 {
     [EmailAddress(ErrorMessage = "Invalid email address format")]

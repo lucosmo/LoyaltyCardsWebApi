@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using DotNetEnv;
-using LoyalityCardsWebApi.API.Repositories;
+using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using LoyalityCardsWebApi.API.Middleware;
+using LoyaltyCardsWebApi.API.Middleware;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);

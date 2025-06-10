@@ -1,6 +1,6 @@
-using LoyalityCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Data.DTOs;
 
-namespace LoyalityCardsWebApi.API.Models;
+namespace LoyaltyCardsWebApi.API.Models;
 public class User
 {
     public int Id { get; set;}

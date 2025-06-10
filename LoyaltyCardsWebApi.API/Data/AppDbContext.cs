@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using LoyalityCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Models;
 
 public class AppDbContext : DbContext
 {
