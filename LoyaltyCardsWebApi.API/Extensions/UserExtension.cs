@@ -1,5 +1,5 @@
-using LoyalityCardsWebApi.API.Models;
-using LoyalityCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Data.DTOs;
 
 namespace LoyaltyCardsWebApi.API.Extensions;
 

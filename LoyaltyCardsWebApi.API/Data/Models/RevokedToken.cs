@@ -1,4 +1,4 @@
-namespace LoyalityCardsWebApi.API.Models;
+namespace LoyaltyCardsWebApi.API.Models;
 
 public class RevokedToken
 {

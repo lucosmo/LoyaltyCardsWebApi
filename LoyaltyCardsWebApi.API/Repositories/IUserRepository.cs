@@ -1,7 +1,7 @@
-using LoyalityCardsWebApi.API.Data.DTOs;
-using LoyalityCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Models;
 
-namespace LoyalityCardsWebApi.API.Repositories;
+namespace LoyaltyCardsWebApi.API.Repositories;
 public interface IUserRepository
 {
     Task<User?> GetUserByIdAsync(int id);

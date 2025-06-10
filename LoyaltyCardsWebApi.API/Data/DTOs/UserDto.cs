@@ -1,4 +1,4 @@
-namespace LoyalityCardsWebApi.API.Data.DTOs;
+namespace LoyaltyCardsWebApi.API.Data.DTOs;
 
 public class UserDto
 {

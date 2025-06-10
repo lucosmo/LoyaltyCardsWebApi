@@ -1,11 +1,11 @@
-using LoyalityCardsWebApi.API.Data.DTOs;
-using LoyalityCardsWebApi.API.Models;
-using LoyalityCardsWebApi.API.Repositories;
+using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace LoyalityCardsWebApi.API.Controllers;
+namespace LoyaltyCardsWebApi.API.Controllers;
 
 [Route("api/[controller]")]
 public class UsersController : ControllerBase

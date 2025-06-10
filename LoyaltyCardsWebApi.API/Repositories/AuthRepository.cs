@@ -1,5 +1,5 @@
-using LoyalityCardsWebApi.API.Models;
-using LoyalityCardsWebApi.API.Repositories;
+using LoyaltyCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 public class AuthRepository : IAuthRepository

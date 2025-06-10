@@ -24,7 +24,7 @@ namespace LoyaltyCardsWebApi.API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("LoyalityCardsWebApi.API.Models.Card", b =>
+            modelBuilder.Entity("LoyaltyCardsWebApi.API.Models.Card", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -57,7 +57,7 @@ namespace LoyaltyCardsWebApi.API.Migrations
                     b.ToTable("Cards");
                 });
 
-            modelBuilder.Entity("LoyalityCardsWebApi.API.Models.User", b =>
+            modelBuilder.Entity("LoyaltyCardsWebApi.API.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -94,9 +94,9 @@ namespace LoyaltyCardsWebApi.API.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("LoyalityCardsWebApi.API.Models.Card", b =>
+            modelBuilder.Entity("LoyaltyCardsWebApi.API.Models.Card", b =>
                 {
-                    b.HasOne("LoyalityCardsWebApi.API.Models.User", "User")
+                    b.HasOne("LoyaltyCardsWebApi.API.Models.User", "User")
                         .WithMany("Cards")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -105,7 +105,7 @@ namespace LoyaltyCardsWebApi.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("LoyalityCardsWebApi.API.Models.User", b =>
+            modelBuilder.Entity("LoyaltyCardsWebApi.API.Models.User", b =>
                 {
                     b.Navigation("Cards");
                 });

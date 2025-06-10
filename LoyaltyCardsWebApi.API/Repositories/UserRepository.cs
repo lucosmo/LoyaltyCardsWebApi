@@ -1,8 +1,8 @@
-using LoyalityCardsWebApi.API.Data.DTOs;
-using LoyalityCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace LoyalityCardsWebApi.API.Repositories;
+namespace LoyaltyCardsWebApi.API.Repositories;
 public class UserRepository : IUserRepository
 {
     private readonly AppDbContext _appDbContext;

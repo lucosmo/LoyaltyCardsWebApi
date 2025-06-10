@@ -1,8 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using LoyalityCardsWebApi.API.Data.DTOs;
-using LoyalityCardsWebApi.API.Models;
-using LoyalityCardsWebApi.API.Repositories;
+using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Repositories;
 
 namespace LoyaltyCardsWebApi.API.Services;
 
