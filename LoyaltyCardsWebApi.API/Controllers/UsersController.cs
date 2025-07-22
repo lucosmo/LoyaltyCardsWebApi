@@ -11,9 +11,11 @@ namespace LoyaltyCardsWebApi.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
-    public UsersController(IUserService userService)
+    private readonly ICardService _cardService;
+    public UsersController(IUserService userService, ICardService cardService)
     {
         _userService = userService;
+        _cardService = cardService;
     }
 
     [HttpPost]
@@ -64,6 +66,18 @@ public class UsersController : ControllerBase
             return NotFound();
         }
         return Ok(user);
+    }
+
+    // GET /api/users/{id}/cards
+    [HttpGet("{id}/cards")]
+    public async Task<IActionResult> GetCardsByUserId(int id)
+    {
+        var cards = await _cardService.GetCardsByUserIdAsync(id);
+        if (!cards.Success)
+        {
+            return NotFound();
+        }
+        return Ok(cards);
     }
 
     [HttpDelete("{id}")]
