@@ -1,11 +1,10 @@
-version: '3'
 services:
   postgres:
     image: postgres
-    container_name: postgres-container
+    container_name: postgres-container-LC
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ($${POSTGRES_PASSWORD})
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
