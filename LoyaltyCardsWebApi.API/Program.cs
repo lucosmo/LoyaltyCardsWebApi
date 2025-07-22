@@ -52,6 +52,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<ICardRepository, CardRepository>();
+builder.Services.AddScoped<ICardService, CardService>();
 
 var app = builder.Build();
 
