@@ -13,7 +13,7 @@ public class UserService : IUserService
     public UserService(IUserRepository userRepository, IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
-        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));;
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     }
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
     {
