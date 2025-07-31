@@ -11,6 +11,9 @@ namespace LoyaltyCardsWebApi.API.Extensions
             {
                 Id = card.Id,
                 Name = card.Name,
+                Image = card.Image,
+                Barcode = card.Barcode,
+                AddedAt = card.AddedAt,
                 UserId = card.UserId
             };
         }
