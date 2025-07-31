@@ -13,21 +13,34 @@ public class CardRepository : ICardRepository
         _appDbContext = appDbContext;
     }
 
-    public async Task<Card> CreateCardAsync(Card newCard)
+    public async Task<Card?> CreateCardAsync(Card newCard)
     {
         var createdCard = await _appDbContext.Cards.AddAsync(newCard);
         await _appDbContext.SaveChangesAsync();
         return createdCard.Entity;
     }
 
-    public Task<Card> Delete(int id)
+    public async Task<Card?> Delete(int id)
     {
-        throw new NotImplementedException();
+        var cardToDelete = await _appDbContext.Cards.FindAsync(id);
+        if (cardToDelete != null)
+        {
+            _appDbContext.Cards.Remove(cardToDelete);
+            await _appDbContext.SaveChangesAsync();
+            return cardToDelete;
+        }
+        else
+        {
+            return null;
+        }
+
     }
 
-    public Task<Card> GetCardByIdAsync(int id)
+    public async Task<Card?> GetCardByIdAsync(int id)
     {
-        throw new NotImplementedException();
+        var card = await _appDbContext.Cards
+            .FirstOrDefaultAsync(c => c.Id == id);
+        return card;
     }
 
     public Task<IEnumerable<Card>> GetCards()
@@ -35,14 +48,28 @@ public class CardRepository : ICardRepository
         throw new NotImplementedException();
     }
 
-    public Task<Card> UpdateCardAsync(int id, UpdatedCardDto card)
+    public async Task<Card?> UpdateCardAsync(Card updateCard)
     {
-        throw new NotImplementedException();
+        var existingCard = await _appDbContext.Cards.FindAsync(updateCard.Id);
+        if (existingCard != null)
+        {
+            existingCard.Name = updateCard.Name;
+            existingCard.Image = updateCard.Image;
+            existingCard.Barcode = updateCard.Barcode;
+            _appDbContext.Cards.Update(existingCard);
+            await _appDbContext.SaveChangesAsync();
+            return existingCard;
+        }
+        else
+        {
+            return null;
+        }
     }
 
     public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int id)
     {
         var cards = await _appDbContext.Cards.Where(c => c.UserId == id).ToListAsync();
+
         return cards;
     }
 }
