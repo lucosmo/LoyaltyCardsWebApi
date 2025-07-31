@@ -5,11 +5,10 @@ namespace LoyaltyCardsWebApi.API.Services
 {
     public interface ICardService
     {
-      //  Task<Result<IEnumerable<Card>>> GetCardsAsync();
-        Task<Result<Card>> GetCardByIdAsync(int id);
+        Task<Result<CardDto>> GetCardByIdAsync(int id);
         Task<Result<IEnumerable<CardDto>>> GetCardsByUserIdAsync(int id);
         Task<Result<CardDto>> CreateCardAsync(CreateCardDto newCard);
-        Task<Result<CardDto>> UpdateCardAsync(int id, UpdatedCardDto card);
-        Task<Result<Card>> DeleteCardAsync(int id);
+        Task<Result<CardDto>> UpdateCardAsync(int id, UpdateCardDto card);
+        Task<Result<CardDto>> DeleteCardAsync(int id);
     }
 }
