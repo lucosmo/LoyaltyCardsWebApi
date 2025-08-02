@@ -1,4 +1,5 @@
-﻿using LoyaltyCardsWebApi.API.Data.DTOs;
+﻿using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
@@ -9,10 +10,13 @@ namespace LoyaltyCardsWebApi.API.Services
     {
         private readonly ICardRepository _cardRepository;
         private readonly IUserService _userService;
-        public CardService(ICardRepository cardRepository, IUserService userService)
+        private readonly IDateTimeProvider _dateTimeProvider;
+        
+        public CardService(ICardRepository cardRepository, IUserService userService, IDateTimeProvider dateTimeProvider)
         {
             _cardRepository = cardRepository ?? throw new ArgumentNullException(nameof(cardRepository));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
         public async Task<Result<CardDto>> CreateCardAsync(CreateCardDto newCard)
         {
@@ -27,7 +31,7 @@ namespace LoyaltyCardsWebApi.API.Services
                 Name = newCard.Name,
                 Image = newCard.Image,
                 Barcode = newCard.Barcode,
-                AddedAt = DateTime.UtcNow,
+                AddedAt = _dateTimeProvider.UtcNow,
                 UserId = currentUserResult.Value.Id
             };
 
