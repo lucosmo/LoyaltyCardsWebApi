@@ -33,7 +33,6 @@ public class CardRepository : ICardRepository
         {
             return null;
         }
-
     }
 
     public async Task<Card?> GetCardByIdAsync(int id)
@@ -66,10 +65,14 @@ public class CardRepository : ICardRepository
         }
     }
 
-    public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int id)
+    public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int? id)
     {
         var cards = await _appDbContext.Cards.Where(c => c.UserId == id).ToListAsync();
-
         return cards;
+    }
+
+    public async Task<bool> ExistsCardByBarcodeAsync(string barcode, int? userId)
+    {
+        return await _appDbContext.Cards.AnyAsync(c => c.Barcode == barcode && c.UserId == userId);
     }
 }

@@ -1,6 +1,8 @@
 ﻿using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -18,52 +20,88 @@ namespace LoyaltyCardsWebApi.API.Controllers
         }
 
         // GET api/<CardsController>/5
-
+        [Authorize]
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Get(int id)
         {
-            var card = await _cardService.GetCardByIdAsync(id);
-            if (card.Value == null)
+            var userId = User.GetUserIdAsInt();
+            if (!userId.HasValue)
             {
-                return NotFound(card);
+                return Unauthorized("User ID not found.");
             }
-            return Ok(card);
+            var cardResult = await _cardService.GetCardByIdAsync(id, userId);
+            if (!cardResult.Success)
+            {
+                return NotFound(cardResult.Error);
+            }
+            return Ok(cardResult.Value);
         }
 
         // POST api/<CardsController>
+        [Authorize]
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] CreateCardDto newCard)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> Create([FromBody] CreateCardDto newCard)
         {
-            var result = await _cardService.CreateCardAsync(newCard);
-            if (!result.Success)
+            var userId = User.GetUserIdAsInt();
+            if (!userId.HasValue)
             {
-                return BadRequest(result);
+                return Unauthorized("User ID not found.");
             }
-            return Ok(result);
+            var cardResult = await _cardService.CreateCardAsync(newCard, userId);
+            if (!cardResult.Success)
+            {
+                return BadRequest(cardResult.Error);
+            }
+            return CreatedAtAction(nameof(Get), new { id = cardResult.Value?.Id }, cardResult.Value);
         }
 
         // PATCH api/<CardsController>/5
+        [Authorize]
         [HttpPatch("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UpdateCard(int id, [FromBody] UpdateCardDto updateCard)
         {
-            var result = await _cardService.UpdateCardAsync(id, updateCard);
-            if (!result.Success)
+            var userId = User.GetUserIdAsInt();
+            if (!userId.HasValue)
             {
-                return NotFound(result);
+                return Unauthorized("User ID not found.");
             }
-            return Ok(result);
+            var cardResult = await _cardService.UpdateCardAsync(id, updateCard, userId);
+            if (!cardResult.Success)
+            {
+                return NotFound(cardResult.Error);
+            }
+            return Ok(cardResult.Value);
         }
 
         // DELETE api/<CardsController>/5
+        [Authorize]
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> DeleteCardById(int id)
         {
-            var card = await _cardService.DeleteCardAsync(id);
-            if (!card.Success)
+            var userId = User.GetUserIdAsInt();
+            if (!userId.HasValue)
             {
-                return NotFound(card);
+                return Unauthorized("User ID not found.");
             }
-            return Ok(card);
+
+            var cardResult = await _cardService.DeleteCardAsync(id, userId);
+            if (!cardResult.Success)
+            {
+                return NotFound(cardResult.Error);
+            }
+            return Ok(cardResult.Value);
         }
     }
 }
