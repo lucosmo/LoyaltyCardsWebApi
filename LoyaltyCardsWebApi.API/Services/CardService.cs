@@ -20,6 +20,10 @@ namespace LoyaltyCardsWebApi.API.Services
         }
         public async Task<Result<CardDto>> CreateCardAsync(CreateCardDto newCard, int? userId)
         {
+            if (userId is null)
+            {
+                return Result<CardDto>.Fail("User ID is required to create a card.");
+            }
             var barcodeExists = await _cardRepository.ExistsCardByBarcodeAsync(newCard.Barcode, userId);
             if (barcodeExists)
             {
@@ -66,8 +70,11 @@ namespace LoyaltyCardsWebApi.API.Services
 
         public async Task<Result<CardDto>> GetCardByIdAsync(int id, int? userId)
         {
-            var cardResult = await _cardRepository.GetCardByIdAsync(id);
-
+            if (userId is null)
+            {
+                return Result<CardDto>.Fail("User ID is required to access this card.");
+            }
+            var cardResult = await _cardRepository.GetCardByIdAsync(id); 
             if (cardResult is null)
             {
                 return Result<CardDto>.Fail("Card not found");
@@ -81,11 +88,11 @@ namespace LoyaltyCardsWebApi.API.Services
 
         public async Task<Result<IEnumerable<CardDto>>> GetCardsByUserIdAsync(int? userId)
         {
-            var cards = await _cardRepository.GetCardsByUserIdAsync(userId);
-            if (cards is null || !cards.Any())
+            if (userId is null)
             {
-                return Result<IEnumerable<CardDto>>.Fail("No cards found for this user.");
+                return Result<IEnumerable<CardDto>>.Fail("User ID is required to access cards.");
             }
+            var cards = await _cardRepository.GetCardsByUserIdAsync(userId);
             return Result<IEnumerable<CardDto>>.Ok(cards.Select(card => card.ToDto()));
         }
 
