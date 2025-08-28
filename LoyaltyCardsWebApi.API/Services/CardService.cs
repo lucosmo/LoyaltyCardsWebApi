@@ -9,13 +9,11 @@ namespace LoyaltyCardsWebApi.API.Services
     public class CardService : ICardService
     {
         private readonly ICardRepository _cardRepository;
-        private readonly IUserService _userService;
         private readonly IDateTimeProvider _dateTimeProvider;
         
-        public CardService(ICardRepository cardRepository, IUserService userService, IDateTimeProvider dateTimeProvider)
+        public CardService(ICardRepository cardRepository, IDateTimeProvider dateTimeProvider)
         {
             _cardRepository = cardRepository ?? throw new ArgumentNullException(nameof(cardRepository));
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
             _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
         }
         public async Task<Result<CardDto>> CreateCardAsync(CreateCardDto newCard, int? userId)
@@ -51,6 +49,10 @@ namespace LoyaltyCardsWebApi.API.Services
 
         public async Task<Result<CardDto>> DeleteCardAsync(int id, int? userId)
         {
+            if (userId is null)
+            {
+                return Result<CardDto>.Fail("User ID is required to delete this card.");
+            }
             var cardResult = await _cardRepository.GetCardByIdAsync(id);
             if (cardResult == null)
             {
@@ -77,7 +79,7 @@ namespace LoyaltyCardsWebApi.API.Services
             var cardResult = await _cardRepository.GetCardByIdAsync(id); 
             if (cardResult is null)
             {
-                return Result<CardDto>.Fail("Card not found");
+                return Result<CardDto>.Fail("Card not found.");
             }
             if (cardResult.UserId != userId)
             {
@@ -98,6 +100,11 @@ namespace LoyaltyCardsWebApi.API.Services
 
         public async Task<Result<CardDto>> UpdateCardAsync(int id, UpdateCardDto updateCard, int? userId)
         {
+            if (userId is null)
+            {
+                return Result<CardDto>.Fail("User ID is required to update this card.");
+            }
+
             var currentCard = await _cardRepository.GetCardByIdAsync(id);
             if (currentCard is null)
             {
