@@ -12,7 +12,6 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
     public class CardServiceTests
     {
         private Mock<ICardRepository> _cardRepository;
-        private Mock<IUserService> _userService;
         private Mock<IDateTimeProvider> _dateTimeProvider;
         private CardService _cardService;
 
@@ -20,110 +19,102 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         public void SetUp()
         {
             _cardRepository = new Mock<ICardRepository>();
-            _userService = new Mock<IUserService>();
             _dateTimeProvider = new Mock<IDateTimeProvider>();
-            _cardService = new CardService(_cardRepository.Object, _userService.Object, _dateTimeProvider.Object);
+            _cardService = new CardService(_cardRepository.Object, _dateTimeProvider.Object);
         }
+
+        private static class TimeData
+        {
+            public static readonly DateTime FixedTime1 = new DateTime(2023, 10, 1, 12, 0, 0, DateTimeKind.Utc);
+            public static readonly DateTime FixedTime2 = new DateTime(2024, 11, 4, 11, 15, 0, DateTimeKind.Utc);
+            public static readonly DateTime FixedTime3 = new DateTime(2025, 1, 7, 14, 25, 12, DateTimeKind.Utc);
+            public static readonly DateTime FixedTime4 = new DateTime(2025, 2, 2, 22, 12, 23, DateTimeKind.Utc);
+        }
+
+        private static CardDto NewCardDto(int id, string name, string image, string barcode, DateTime addedAt, int userId) => new CardDto
+        {
+            Id = id,
+            Name = name,
+            Image = image,
+            Barcode = barcode,
+            AddedAt = addedAt,
+            UserId = userId
+        };
+        private static CreateCardDto NewCreateCardDto(string name, string image, string barcode) => new CreateCardDto
+        {
+            Name = name,
+            Image = image,
+            Barcode = barcode
+        };
+
+        private static Card NewCard(int id, string name, string image, string barcode, DateTime addedAt, int userId) => new Card
+        {
+            Id = id,
+            Name = name,
+            Image = image,
+            Barcode = barcode,
+            AddedAt = addedAt,
+            UserId = userId
+        };
+
+        private static UpdateCardDto NewUpdateCardDto(string name, string image, string barcode) => new UpdateCardDto
+        {
+            Name = name,
+            Image = image,
+            Barcode = barcode
+        };
 
         public static IEnumerable<TestCaseData> CreateCardTestCases()
         {
-            var fixedTime1 = new DateTime(2023, 10, 1, 12, 0, 0, DateTimeKind.Utc);
-            var fixedTime2 = new DateTime(2024, 11, 4, 11, 15, 0, DateTimeKind.Utc);
-            var fixedTime3 = new DateTime(2025, 1, 7, 14, 25, 12, DateTimeKind.Utc);
-            var fixedTime4 = new DateTime(2025, 2, 2, 22, 12, 23, DateTimeKind.Utc);
-
             yield return new TestCaseData(
-                new CreateCardDto
-                {
-                    Name = "Card1",
-                    Image = "test.jpg",
-                    Barcode = "1234567890"
-                },
-                new Card
-                {
-                    Name = "Card1",
-                    Image = "test.jpg",
-                    Barcode = "1234567890",
-                    AddedAt = fixedTime1,
-                    UserId = 1
-                },
+                NewCreateCardDto("Card1", "test.jpg", "1234567890"),
+                NewCard(1, "Card1", "test.jpg", "1234567890", TimeData.FixedTime1, 1),
                 1
             );
 
             yield return new TestCaseData(
-                new CreateCardDto
-                {
-                    Name = "Card2",
-                    Image = "test2.jpg",
-                    Barcode = "1234567890_2"
-                },
-                new Card
-                {
-                    Name = "Card2",
-                    Image = "test2.jpg",
-                    Barcode = "1234567890_2",
-                    AddedAt = fixedTime2,
-                    UserId = 2
-                },
+                NewCreateCardDto("Card2", "test2.jpg", "1234567890_2"),
+                NewCard(2, "Card2", "test2.jpg", "1234567890_2", TimeData.FixedTime2, 2),
                 2
             );
 
             yield return new TestCaseData(
-                new CreateCardDto
-                {
-                    Name = "Card3",
-                    Image = "test3.jpg",
-                    Barcode = "1234567890_3"
-                },
-                new Card
-                {
-                    Name = "Card3",
-                    Image = "test3.jpg",
-                    Barcode = "1234567890_3",
-                    AddedAt = fixedTime3,
-                    UserId = 3
-                },
+                NewCreateCardDto("Card3", "test3.jpg", "1234567890_3"),
+                NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 3),
                 3
             );
 
             yield return new TestCaseData(
-                new CreateCardDto
-                {
-                    Name = "Card4",
-                    Image = "test4.jpg",
-                    Barcode = "1234567890_4"
-                },
-                new Card
-                {
-                    Name = "Card4",
-                    Image = "test4.jpg",
-                    Barcode = "1234567890_4",
-                    AddedAt = fixedTime4,
-                    UserId = 4
-                },
+                NewCreateCardDto("Card4", "test4.jpg", "1234567890_4"),
+                NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 4),
                 4
             );
         }
 
         [Test, TestCaseSource(nameof(CreateCardTestCases))]
-        public async Task CreateCard_ValidInput_ReturnsSuccess(CreateCardDto createCardDto, Card card, int? userId)
+        public async Task CreateCard_ValidInput_ReturnsSuccess(CreateCardDto createCardDto, Card expectedCard, int? userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.CreateCardAsync(It.IsAny<Card>())).Returns((Card card) => Task.FromResult<Card?>(card));
+            _cardRepository.Setup(cr => cr.CreateCardAsync(It.IsAny<Card>())).ReturnsAsync(expectedCard);
             _cardRepository.Setup(cr => cr.ExistsCardByBarcodeAsync(createCardDto.Barcode, userId)).ReturnsAsync(false);
-            _dateTimeProvider.Setup(dp => dp.UtcNow).Returns(card.AddedAt);
+            _dateTimeProvider.Setup(dp => dp.UtcNow).Returns(expectedCard.AddedAt);
 
             // Act
             Result<CardDto> result = await _cardService.CreateCardAsync(createCardDto, userId);
             // Assert
             Assert.IsTrue(result.Success);
             Assert.IsNotNull(result.Value);
-            Assert.That(result.Value.Id, Is.EqualTo(card.Id));
-            Assert.That(result.Value.Name, Is.EqualTo(card.Name));
-            Assert.That(result.Value.Image, Is.EqualTo(card.Image));
-            Assert.That(result.Value.Barcode, Is.EqualTo(card.Barcode));
-            Assert.That(result.Value.AddedAt, Is.EqualTo(card.AddedAt));
-            _cardRepository.Verify(cr => cr.CreateCardAsync(It.IsAny<Card>()), Times.Once);
+            Assert.That(result.Value.Id, Is.EqualTo(expectedCard.Id));
+            Assert.That(result.Value.Name, Is.EqualTo(expectedCard.Name));
+            Assert.That(result.Value.Image, Is.EqualTo(expectedCard.Image));
+            Assert.That(result.Value.Barcode, Is.EqualTo(expectedCard.Barcode));
+            Assert.That(result.Value.AddedAt, Is.EqualTo(expectedCard.AddedAt));
+            _cardRepository.Verify(cr => cr.CreateCardAsync(It.Is<Card>(c =>
+                c.Name == expectedCard.Name &&
+                c.Image == expectedCard.Image &&
+                c.Barcode == expectedCard.Barcode &&
+                c.AddedAt == expectedCard.AddedAt &&
+                c.UserId == expectedCard.UserId)), Times.Once);
             _cardRepository.Verify(cr => cr.ExistsCardByBarcodeAsync(createCardDto.Barcode, userId), Times.Once);
 
         }
@@ -180,104 +171,35 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
 
         public static IEnumerable<TestCaseData> DeleteAndGetCardByIdTestCases()
         {
-            var fixedTime1 = new DateTime(2023, 10, 1, 12, 0, 0, DateTimeKind.Utc);
-            var fixedTime2 = new DateTime(2024, 11, 4, 11, 15, 0, DateTimeKind.Utc);
-            var fixedTime3 = new DateTime(2025, 1, 7, 14, 25, 12, DateTimeKind.Utc);
-            var fixedTime4 = new DateTime(2025, 2, 2, 22, 12, 23, DateTimeKind.Utc);
-
             yield return new TestCaseData(
-                new CardDto
-                {
-                    Id = 1,
-                    Name = "Card1",
-                    Image = "test.jpg",
-                    Barcode = "1234567890",
-                    AddedAt = fixedTime1,
-                    UserId = 1
-                },
-                new Card
-                {
-                    Id = 1,
-                    Name = "Card1",
-                    Image = "test.jpg",
-                    Barcode = "1234567890",
-                    AddedAt = fixedTime1,
-                    UserId = 1
-                },
+                NewCardDto(1, "Card1", "test.jpg", "1234567890", TimeData.FixedTime1, 1),
+                NewCard(1, "Card1", "test.jpg", "1234567890", TimeData.FixedTime1, 1),
                 1,
                 1
             );
 
             yield return new TestCaseData(
-                new CardDto
-                {
-                    Id = 2,
-                    Name = "Card2",
-                    Image = "test2.jpg",
-                    Barcode = "1234567890_2",
-                    AddedAt = fixedTime2,
-                    UserId = 2
-                },
-                new Card
-                {
-                    Id = 2,
-                    Name = "Card2",
-                    Image = "test2.jpg",
-                    Barcode = "1234567890_2",
-                    AddedAt = fixedTime2,
-                    UserId = 2
-                },
+                NewCardDto(2, "Card2", "test2.jpg", "1234567890_2", TimeData.FixedTime2, 2),
+                NewCard(2, "Card2", "test2.jpg", "1234567890_2", TimeData.FixedTime2, 2),
                 2,
                 2
             );
 
             yield return new TestCaseData(
-                new CardDto
-                {
-                    Id = 3,
-                    Name = "Card3",
-                    Image = "test3.jpg",
-                    Barcode = "1234567890_3",
-                    AddedAt = fixedTime3,
-                    UserId = 3
-                },
-                new Card
-                {
-                    Id = 3,
-                    Name = "Card3",
-                    Image = "test3.jpg",
-                    Barcode = "1234567890_3",
-                    AddedAt = fixedTime3,
-                    UserId = 3
-                },
+                NewCardDto(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 3),
+                NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 3),
                 3,
                 3
             );
 
             yield return new TestCaseData(
-                new CardDto
-                {
-                    Id = 4,
-                    Name = "Card4",
-                    Image = "test4.jpg",
-                    Barcode = "1234567890_4",
-                    AddedAt = fixedTime4,
-                    UserId = 4
-                },
-                new Card
-                {
-                    Id = 4,
-                    Name = "Card4",
-                    Image = "test4.jpg",
-                    Barcode = "1234567890_4",
-                    AddedAt = fixedTime4,
-                    UserId = 4
-                },
+                NewCardDto(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 4),
+                NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 4),
                 4,
                 4
             );
         }
-
+            
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
         public async Task DeleteCard_ValidInput_ReturnsSuccess(CardDto cardDto, Card card, int cardId, int? userId)
         {
@@ -325,10 +247,10 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         {
             // Arrange
             _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            userId = userId + 1;
+            int? otherUserId = userId + 1;
 
             // Act
-            Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, userId);
+            Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, otherUserId);
 
             // Assert
             Assert.IsFalse(result.Success);
@@ -336,6 +258,24 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Error, Is.EqualTo("You do not have permission to delete this card."));
 
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.Delete(cardId), Times.Never);
+        }
+
+        [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
+        public async Task DeleteCard_UserIdIsNull_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        {
+            // Arrange
+            int? otherUserId = null;
+
+            // Act
+            Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, otherUserId);
+
+            // Assert
+            Assert.IsFalse(result.Success);
+            Assert.IsNull(result.Value);
+            Assert.That(result.Error, Is.EqualTo("User ID is required to delete this card."));
+
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Never);
             _cardRepository.Verify(cr => cr.Delete(cardId), Times.Never);
         }
 
@@ -392,7 +332,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             // Assert
             Assert.IsFalse(result.Success);
             Assert.IsNull(result.Value);
-            Assert.That(result.Error, Is.EqualTo("Card not found"));
+            Assert.That(result.Error, Is.EqualTo("Card not found."));
 
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
         }
@@ -401,10 +341,10 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         public async Task GetCardById_UserIdIsNull_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
         {
             // Arrange
-            userId = null;
+            int? otherUserId = null;
 
             // Act
-            Result<CardDto> result = await _cardService.GetCardByIdAsync(cardId, userId);
+            Result<CardDto> result = await _cardService.GetCardByIdAsync(cardId, otherUserId);
 
             // Assert
             Assert.IsFalse(result.Success);
@@ -419,10 +359,10 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         {
             // Arrange
             _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            userId = userId + 1;
+            int? otherUserId = userId + 1;
 
             // Act
-            Result<CardDto> result = await _cardService.GetCardByIdAsync(cardId, userId);
+            Result<CardDto> result = await _cardService.GetCardByIdAsync(cardId, otherUserId);
 
             // Assert
             Assert.IsFalse(result.Success);
@@ -434,41 +374,12 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
 
         public static IEnumerable<TestCaseData> GetCardsByUserIdTestCases()
         {
-            var fixedTime1 = new DateTime(2023, 10, 1, 12, 0, 0, DateTimeKind.Utc);
-            var fixedTime2 = new DateTime(2024, 11, 4, 11, 15, 0, DateTimeKind.Utc);
-            var fixedTime3 = new DateTime(2025, 1, 7, 14, 25, 12, DateTimeKind.Utc);
-            var fixedTime4 = new DateTime(2025, 2, 2, 22, 12, 23, DateTimeKind.Utc);
-
             yield return new TestCaseData(
                 new List<Card>
                 {
-                    new Card
-                    {
-                        Id = 1,
-                        Name = "Card1",
-                        Image = "test.jpg",
-                        Barcode = "1234567890",
-                        AddedAt = fixedTime1,
-                        UserId = 1
-                    },
-                    new Card
-                    {
-                        Id = 2,
-                        Name = "Card2",
-                        Image = "test2.jpg",
-                        Barcode = "1234567890_2",
-                        AddedAt = fixedTime2,
-                        UserId = 1
-                    },
-                    new Card
-                    {
-                        Id = 3,
-                        Name = "Card3",
-                        Image = "test3.jpg",
-                        Barcode = "1234567890_3",
-                        AddedAt = fixedTime3,
-                        UserId = 1
-                    }
+                    NewCard(1, "Card1", "test.jpg", "1234567890", TimeData.FixedTime1, 1),
+                    NewCard(2, "Card2", "test2.jpg", "1234567890_2", TimeData.FixedTime2, 1),
+                    NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 1)
                 },
                 1,
                 3
@@ -477,15 +388,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             yield return new TestCaseData(
                 new List<Card>
                 {
-                    new Card
-                    {
-                        Id = 4,
-                        Name = "Card4",
-                        Image = "test4.jpg",
-                        Barcode = "1234567890_4",
-                        AddedAt = fixedTime4,
-                        UserId = 2
-                    }
+                    NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 2)
                 },
                 2,
                 1
@@ -515,7 +418,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test]
-        public async Task GetCardsByUserId_UserIsNull_ReturnsFailure()
+        public async Task GetCardsByUserId_UserIdIsNull_ReturnsFailure()
         {
             // Arrange
             var userId = (int?)null;
@@ -533,125 +436,29 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
 
         public static IEnumerable<TestCaseData> UpdateCardTestCases()
         {
-            var fixedTime1 = new DateTime(2023, 10, 1, 12, 0, 0, DateTimeKind.Utc);
-            var fixedTime2 = new DateTime(2024, 11, 4, 11, 15, 0, DateTimeKind.Utc);
-            var fixedTime3 = new DateTime(2025, 1, 7, 14, 25, 12, DateTimeKind.Utc);
-            var fixedTime4 = new DateTime(2025, 2, 2, 22, 12, 23, DateTimeKind.Utc);
-
             yield return new TestCaseData(
-                new UpdateCardDto
-                {
-                    Name = "Card1_update",
-                    Image = "test11_update.jpg",
-                    Barcode = "1234567890_update"
-                },
-                new Card
-                {
-                    Id = 1,
-                    Name = "Card1",
-                    Image = "test.jpg",
-                    Barcode = "1234567890",
-                    AddedAt = fixedTime1,
-                    UserId = 1
-                },
-                new Card
-                {
-                    Id = 1,
-                    Name = "Card1_update",
-                    Image = "test11_update.jpg",
-                    Barcode = "1234567890_update",
-                    AddedAt = fixedTime1,
-                    UserId = 1
-                },
-                1,
-                1
+                NewUpdateCardDto("Card1_update", "test11_update.jpg", "1234567890_update"),
+                NewCard(1, "Card1", "test.jpg", "1234567890", TimeData.FixedTime1, 1),
+                NewCard(1, "Card1_update", "test11_update.jpg", "1234567890_update", TimeData.FixedTime1, 1),
+                1, 1
             );
-
             yield return new TestCaseData(
-                new UpdateCardDto
-                {
-                    Name = "Card2_update",
-                    Image = "test22_update.jpg",
-                    Barcode = "1234567890_2_update"
-                },
-                new Card
-                {
-                    Id = 2,
-                    Name = "Card2",
-                    Image = "test2.jpg",
-                    Barcode = "1234567890_2",
-                    AddedAt = fixedTime2,
-                    UserId = 2
-                },
-                new Card
-                {
-                    Id = 2,
-                    Name = "Card2_update",
-                    Image = "test22_update.jpg",
-                    Barcode = "1234567890_2_update",
-                    AddedAt = fixedTime2,
-                    UserId = 2
-                },
-                2,
-                2
+                NewUpdateCardDto("Card2_update", "test22_update.jpg", "1234567890_2_update"),
+                NewCard(2, "Card2", "test2.jpg", "1234567890_2", TimeData.FixedTime2, 2),
+                NewCard(2, "Card2_update", "test22_update.jpg", "1234567890_2_update", TimeData.FixedTime2, 2),
+                2, 2
             );
-
             yield return new TestCaseData(
-                new UpdateCardDto
-                {
-                    Name = "Card3_update",
-                    Image = "test33_update.jpg",
-                    Barcode = "1234567890_3_update"
-                },
-                new Card
-                {
-                    Id = 3,
-                    Name = "Card3",
-                    Image = "test3.jpg",
-                    Barcode = "1234567890_3",
-                    AddedAt = fixedTime3,
-                    UserId = 3
-                },
-                new Card
-                {
-                    Id = 3,
-                    Name = "Card3_update",
-                    Image = "test33_update.jpg",
-                    Barcode = "1234567890_3_update",
-                    AddedAt = fixedTime3,
-                    UserId = 3
-                },
-                3,
-                3
+                NewUpdateCardDto("Card3_update", "test33_update.jpg", "1234567890_3_update"),
+                NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 3),
+                NewCard(3, "Card3_update", "test33_update.jpg", "1234567890_3_update", TimeData.FixedTime3, 3),
+                3, 3
             );
-
             yield return new TestCaseData(
-                new UpdateCardDto
-                {
-                    Name = "Card4_update",
-                    Image = "test4_update.jpg",
-                    Barcode = "1234567890_4_update"
-                },
-                new Card
-                {
-                    Id = 4,
-                    Name = "Card4",
-                    Image = "test4.jpg",
-                    Barcode = "1234567890_4",
-                    AddedAt = fixedTime4,
-                    UserId = 4
-                },
-                new Card
-                {
-                    Id = 4,
-                    Name = "Card4_update",
-                    Image = "test4_update.jpg",
-                    Barcode = "1234567890_4_update",
-                    AddedAt = fixedTime4,
-                    UserId = 4
-                },
-                4,
-                4
+                NewUpdateCardDto("Card4_update", "test4_update.jpg", "1234567890_4_update"),
+                NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 4),
+                NewCard(4, "Card4_update", "test4_update.jpg", "1234567890_4_update", TimeData.FixedTime4, 4),
+                4, 4
             );
         }
 
@@ -676,7 +483,13 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Value.UserId, Is.EqualTo(updatedCard.UserId));
 
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.Is<Card>(c =>
+                c.Id == card.Id &&
+                c.Name == updatedCard.Name &&
+                c.Image == updatedCard.Image &&
+                c.Barcode == updatedCard.Barcode &&
+                c.AddedAt == card.AddedAt &&
+                c.UserId == card.UserId)), Times.Once);
         }
 
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
@@ -702,10 +515,10 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         {
             // Arrange
             _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            userId = userId + 1;
+            int? otherUserId = userId + 1;
 
             // Act
-            Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, userId);
+            Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, otherUserId);
 
             // Assert
             Assert.IsFalse(result.Success);
@@ -713,6 +526,24 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Error, Is.EqualTo("You do not have permission to access this card."));
 
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Never);
+        }
+
+        [Test, TestCaseSource(nameof(UpdateCardTestCases))]
+        public async Task UpdateCard_UserIdIsNull_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int? userId)
+        {
+            // Arrange
+            int? otherUserId = null;
+
+            // Act
+            Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, otherUserId);
+
+            // Assert
+            Assert.IsFalse(result.Success);
+            Assert.IsNull(result.Value);
+            Assert.That(result.Error, Is.EqualTo("User ID is required to update this card."));
+
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Never);
             _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Never);
         }
         
