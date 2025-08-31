@@ -8,6 +8,6 @@ public class Card
     public required string Barcode { get; set;}
     public DateTime AddedAt { get; set;}
     public int UserId { get; set; }
-    public required User User { get; set; }
+    public User? User { get; set; }
 }
 
