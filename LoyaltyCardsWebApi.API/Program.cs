@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using LoyaltyCardsWebApi.API.Middleware;
 using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.ExceptionHandling;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -57,6 +58,12 @@ builder.Services.AddScoped<ICardRepository, CardRepository>();
 builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -67,6 +74,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<TokenRevocationMiddleware>();
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
