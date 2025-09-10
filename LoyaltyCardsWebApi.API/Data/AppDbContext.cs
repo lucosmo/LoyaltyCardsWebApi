@@ -13,5 +13,10 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<Card>(c =>
+        {
+            c.HasIndex(card => new { card.Barcode, card.UserId })
+             .IsUnique();
+        });
     }
 }
