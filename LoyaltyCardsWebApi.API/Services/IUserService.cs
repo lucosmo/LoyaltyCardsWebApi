@@ -1,3 +1,4 @@
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
 

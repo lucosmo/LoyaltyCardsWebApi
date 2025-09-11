@@ -1,10 +1,11 @@
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public interface IAuthService
 {
     Task<Result<string>> LoginAsync(LoginDto loginDto);
-    Task<Result<string>> RegisterAsync(CreateUserDto newUserDto);
+    Task<Result<UserDto>> RegisterAsync(CreateUserDto newUserDto);
     Result<string> GetTokenAuthHeader();
     Result<int> GetUserId();
     Result<DateTime> GetTokenExpiryDate();
