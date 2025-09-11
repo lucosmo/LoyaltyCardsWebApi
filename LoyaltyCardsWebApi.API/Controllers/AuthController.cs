@@ -83,6 +83,11 @@ public class AuthController : ControllerBase
             return BadRequest(result.Error);
         }
 
-        return Ok(new {Message = "User registered successfully", User = result.Value});              
+        return CreatedAtAction(
+            actionName: "GetUserById",
+            controllerName: "Users",
+            routeValues: new { id = result.Value?.Id },
+            value: result.Value
+        );              
     }
 }
