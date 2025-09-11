@@ -52,7 +52,7 @@ public class AuthServiceTest
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.That(result.Success, Is.False);
-        Assert.That(result.Error, Is.EqualTo("Invalid credentials"));
+        Assert.That(result.Error, Is.EqualTo("Invalid credentials."));
     }
 
     [Test]
@@ -65,7 +65,7 @@ public class AuthServiceTest
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.That(result.Success, Is.False);
-        Assert.That(result.Error, Is.EqualTo("Invalid credentials"));
+        Assert.That(result.Error, Is.EqualTo("Invalid credentials."));
     }
 
     [Test]
