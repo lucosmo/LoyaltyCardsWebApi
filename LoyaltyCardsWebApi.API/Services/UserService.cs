@@ -3,6 +3,7 @@ using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 using System.Security.Claims;
 using LoyaltyCardsWebApi.API.Extensions;
+using LoyaltyCardsWebApi.API.Common;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
@@ -17,6 +18,10 @@ public class UserService : IUserService
     }
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
     {
+        if (newUser is null)
+        {
+            return Result<UserDto>.BadRequest("User data is required to create a new User.");
+        }
         var newUserModel = new User
         {
             UserName = newUser.UserName,
@@ -31,27 +36,31 @@ public class UserService : IUserService
     public async Task<Result<UserDto>> GetCurrentUserAsync()
     {
         var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+        if (userIdClaim is null || !int.TryParse(userIdClaim.Value, out int userId))
         {
-            return Result<UserDto>.Fail("User ID not found");
+            return Result<UserDto>.Unauthorized("User ID not found.");
         }
 
         var user = await _userRepository.GetUserByIdAsync(userId);
 
-        if (user == null)
+        if (user is null)
         {
-            return Result<UserDto>.Fail("User not found");
+            return Result<UserDto>.NotFound("User not found.");
         }
 
         return Result<UserDto>.Ok(user.ToDto());
     }
-    public async Task<Result<UserDto>> GetUserByIdAsync(int id)
+    public async Task<Result<UserDto>> GetUserByIdAsync(int userId)
     {
-        var user = await _userRepository.GetUserByIdAsync(id);
-
-        if (user == null)
+        if (userId < 0)
         {
-            return Result<UserDto>.Fail("User not found");
+            return Result<UserDto>.BadRequest("Invalid user ID.");
+        }
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user is null)
+        {
+            return Result<UserDto>.NotFound("User not found.");
         }
 
         return Result<UserDto>.Ok(user.ToDto());
@@ -59,23 +68,32 @@ public class UserService : IUserService
 
     public async Task<Result<UserDto>> GetUserByEmailAsync(string email)
     {
+        if (string.IsNullOrEmpty(email))
+        {
+            return Result<UserDto>.BadRequest("Invalid email.");    
+        }
+
         var user = await _userRepository.GetUserByEmailAsync(email);
         
-        if (user == null)
+        if (user is null)
         {
-            return Result<UserDto>.Fail("User not found");
+            return Result<UserDto>.NotFound("User not found.");
         }
 
         return Result<UserDto>.Ok(user.ToDto());
     }
       
-    public async Task<Result<UserDto>> DeleteAsync(int id)
+    public async Task<Result<UserDto>> DeleteAsync(int userId)
     {
-        var user = await _userRepository.DeleteAsync(id);
-
-        if (user == null)
+        if (userId < 0)
         {
-            return Result<UserDto>.Fail("User not found");
+            return Result<UserDto>.BadRequest("Invalid user ID.");
+        }
+        var user = await _userRepository.DeleteAsync(userId);
+
+        if (user is null)
+        {
+            return Result<UserDto>.NotFound("User not found.");
         }
 
         return Result<UserDto>.Ok(user.ToDto());
@@ -91,10 +109,19 @@ public class UserService : IUserService
 
     public async Task<Result<bool>> UpdateUserAsync(int id, UpdatedUserDto updatedUser)
     {
-        var existingUser = await _userRepository.GetUserByIdAsync(id); 
-        if (existingUser == null || updatedUser == null)
+        if (id < 0)
         {
-            return Result<bool>.Fail("");
+            return Result<bool>.BadRequest("Invalid user ID.");
+        }
+
+        if (updatedUser is null)
+        {
+            return Result<bool>.BadRequest("User data is required.");
+        }
+        var existingUser = await _userRepository.GetUserByIdAsync(id); 
+        if (existingUser is null)
+        {
+            return Result<bool>.NotFound("User not found.");
         }     
         if (updatedUser.Email != null && updatedUser.Email != existingUser.Email)
         {
@@ -106,6 +133,11 @@ public class UserService : IUserService
         }
 
         var isUserUpdated = await _userRepository.UpdateAsync(existingUser);
+        if (!isUserUpdated)
+        {
+            return Result<bool>.Fail("User update failed.");
+        }
+
         return Result<bool>.Ok(isUserUpdated);
     }
 }

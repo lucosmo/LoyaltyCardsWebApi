@@ -1,6 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 
@@ -22,11 +24,23 @@ public class AuthService : IAuthService
     }
     public async Task<Result<string>> LoginAsync(LoginDto loginDto)
     {
+        if (loginDto is null)
+        {
+            return Result<string>.BadRequest("Login data is required.");
+        }
+        if (string.IsNullOrEmpty(loginDto.Email))
+        {
+            return Result<string>.BadRequest("Email is required.");
+        }
+        if (string.IsNullOrEmpty(loginDto.Password))
+        {
+            return Result<string>.BadRequest("Password is required.");
+        }
         var user = await _userRepository.GetUserByEmailAsync(loginDto.Email);
         
         if (user==null || user.Password != loginDto.Password)
         {
-            return Result<string>.Fail("Invalid credentials");
+            return Result<string>.Unauthorized("Invalid credentials.");
         }
         
         var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email);
@@ -37,12 +51,29 @@ public class AuthService : IAuthService
         return Result<string>.Ok(token);
     }
 
-    public async Task<Result<string>> RegisterAsync(CreateUserDto newUserDto)
+    public async Task<Result<UserDto>> RegisterAsync(CreateUserDto newUserDto)
     {
+        if (newUserDto is null)
+        {
+            return Result<UserDto>.BadRequest("Registration data is required.");
+        }
+        if (string.IsNullOrWhiteSpace(newUserDto.Email))
+        {
+            return Result<UserDto>.BadRequest("Email is required.");
+        }
+        if (string.IsNullOrWhiteSpace(newUserDto.Password))
+        {
+            return Result<UserDto>.BadRequest("Password is required.");
+        }
+        if (string.IsNullOrWhiteSpace(newUserDto.UserName))
+        {
+            return Result<UserDto>.BadRequest("Username is required.");
+        }
+
         var existingUser = await _userRepository.GetUserByEmailAsync(newUserDto.Email);
         if (existingUser != null)
         {
-            return Result<string>.Fail($"User with this email: {newUserDto.Email} already exists");
+            return Result<UserDto>.Conflict($"User with this email: {newUserDto.Email} already exists");
         }
 
         var newUserModel = new User
@@ -53,21 +84,28 @@ public class AuthService : IAuthService
             AccountCreatedDate = DateTime.UtcNow  
         };
         var createdUser = await _userRepository.CreateAsync(newUserModel);
-        if (createdUser == null)
+        if (createdUser is null)
         {
-            return Result<string>.Fail($"Registration failed for this email: {newUserDto.Email}");
+            return Result<UserDto>.Fail($"Registration failed for this email: {newUserDto.Email}");
         }
-        return Result<string>.Ok($"User {createdUser.UserName} registered successfully");
+
+        var userDto = createdUser.ToDto();
+        return Result<UserDto>.Ok(userDto);
     }
 
     public Result<string> GetTokenAuthHeader()
     {
         var authHeader = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
-        if (authHeader == null || authHeader.StartsWith("Bearer ") == false )
+        if (authHeader is null || authHeader.StartsWith("Bearer ") == false )
         {
-            return Result<string>.Fail("Token not found in Authorization header");
+            return Result<string>.Unauthorized("Token not found in Authorization header");
         }
         var token = authHeader.Substring("Bearer ".Length).Trim();
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return Result<string>.BadRequest("Token is empty.");
+        }
 
         return Result<string>.Ok(token);
     }
@@ -78,7 +116,7 @@ public class AuthService : IAuthService
                         _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
         {
-            return Result<int>.Fail("User ID not found in token");
+            return Result<int>.Unauthorized("User ID not found in token");
         }
         return Result<int>.Ok(userId);
     }
@@ -88,7 +126,7 @@ public class AuthService : IAuthService
         var expiryDateClaim = _httpContextAccessor.HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Exp)?.Value;
         if (string.IsNullOrEmpty(expiryDateClaim) || !long.TryParse(expiryDateClaim, out var expiryDateSeconds))
         {
-            return Result<DateTime>.Fail("Token expiry date not found");
+            return Result<DateTime>.NotFound("Token expiry date not found");
         }
         var expiryDate = DateTimeOffset.FromUnixTimeSeconds(expiryDateSeconds).UtcDateTime;
         return Result<DateTime>.Ok(expiryDate);
@@ -96,8 +134,17 @@ public class AuthService : IAuthService
 
     public async Task<Result<string>> AddRevokedTokenAsync(string token, DateTime expiryDate, int userId)
     {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return Result<string>.BadRequest("Token is required.");
+        }
+        if (userId <= 0)
+        {
+            return Result<string>.BadRequest("Invalid user ID.");
+        }
+
         var revokedToken = await _authRepository.AddRevokedTokenAsync(token, expiryDate, userId);
-        if (revokedToken == null)
+        if (revokedToken is null)
         {
             return Result<string>.Fail("Failed to revoke token. Repository returned null.");
         }
@@ -107,12 +154,22 @@ public class AuthService : IAuthService
 
     public async Task<bool> IsTokenRevokedAsync(string token)
     {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return false;
+        }
+
         var isRevokedResult = await _authRepository.IsTokenRevokedAsync(token);
         return isRevokedResult;
     }
 
     public async Task<Result<bool>> RevokeAllTokensForUserAsync(int userId)
     {
+        if (userId <= 0)
+        {
+            return Result<bool>.BadRequest("Invalid user ID.");
+        }
+
         await _authRepository.RevokeAllTokensForUserAsync(userId);
         return Result<bool>.Ok(true);
     }
