@@ -52,7 +52,7 @@ public class UserService : IUserService
     }
     public async Task<Result<UserDto>> GetUserByIdAsync(int userId)
     {
-        if (userId < 0)
+        if (userId <= 0)
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
@@ -85,7 +85,7 @@ public class UserService : IUserService
       
     public async Task<Result<UserDto>> DeleteAsync(int userId)
     {
-        if (userId < 0)
+        if (userId <= 0)
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
@@ -107,9 +107,9 @@ public class UserService : IUserService
         return Result<List<UserDto>>.Ok(userDtos);
     }
 
-    public async Task<Result<bool>> UpdateUserAsync(int id, UpdatedUserDto updatedUser)
+    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser)
     {
-        if (id < 0)
+        if (userId <= 0)
         {
             return Result<bool>.BadRequest("Invalid user ID.");
         }
@@ -118,7 +118,7 @@ public class UserService : IUserService
         {
             return Result<bool>.BadRequest("User data is required.");
         }
-        var existingUser = await _userRepository.GetUserByIdAsync(id); 
+        var existingUser = await _userRepository.GetUserByIdAsync(userId); 
         if (existingUser is null)
         {
             return Result<bool>.NotFound("User not found.");
@@ -138,6 +138,6 @@ public class UserService : IUserService
             return Result<bool>.Fail("User update failed.");
         }
 
-        return Result<bool>.Ok(isUserUpdated);
+        return Result<bool>.Ok(true);
     }
 }
