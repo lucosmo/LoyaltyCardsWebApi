@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltyCardsWebApi.API.Controllers;
 
 [Route("api/[controller]")]
+[ApiController]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -21,10 +22,6 @@ public class UsersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto newUser)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest("Wrong details");
-        }
         var result = await _userService.CreateUserAsync(newUser);
         if (!result.Success)
         {
@@ -33,6 +30,7 @@ public class UsersController : ControllerBase
 
         return Ok(result.Value);
     }
+
     [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllUsers()
@@ -57,6 +55,7 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {
@@ -69,6 +68,7 @@ public class UsersController : ControllerBase
     }
 
     // GET /api/users/{id}/cards
+    [Authorize]
     [HttpGet("{id}/cards")]
     public async Task<IActionResult> GetCardsByUserId(int id)
     {
@@ -80,6 +80,7 @@ public class UsersController : ControllerBase
         return Ok(cards);
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUserById(int id)
     {
@@ -91,6 +92,7 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
+    [Authorize]
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody]UpdatedUserDto updatedUser)
     {
