@@ -58,7 +58,7 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<ICardRepository, CardRepository>();
 builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
-builder.Services.AddScoped<ICurrentUserService>(s => s.GetRequiredService<IRequestContext>());
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
 builder.Logging.ClearProviders();
