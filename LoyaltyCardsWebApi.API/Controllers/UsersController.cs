@@ -13,10 +13,12 @@ public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly ICardService _cardService;
-    public UsersController(IUserService userService, ICardService cardService)
+    private readonly ICurrentUserService _currentUserService;
+    public UsersController(IUserService userService, ICardService cardService, ICurrentUserService currentUserService)
     {
         _userService = userService;
         _cardService = cardService;
+        _currentUserService = currentUserService;
     }
 
     [HttpPost]
@@ -59,7 +61,12 @@ public class UsersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUserById(int id)
     {
-        var user = await _userService.GetUserByIdAsync(id);
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId is null)
+        {
+            return Unauthorized("No permission to perform action.");
+        }
+        var user = await _userService.GetUserByIdAsync(id, currentUserId.Value);
         if (!user.Success)
         {
             return NotFound();
@@ -72,7 +79,12 @@ public class UsersController : ControllerBase
     [HttpGet("{id}/cards")]
     public async Task<IActionResult> GetCardsByUserId(int id)
     {
-        var cards = await _cardService.GetCardsByUserIdAsync(id);
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId is null)
+        {
+            return Unauthorized("No permission to perform action.");
+        }
+        var cards = await _cardService.GetCardsByUserIdAsync(id, currentUserId);
         if (!cards.Success)
         {
             return NotFound();
@@ -84,7 +96,12 @@ public class UsersController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUserById(int id)
     {
-        var user = await _userService.DeleteAsync(id);
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId is null)
+        {
+            return Unauthorized("No permission to perform action.");
+        }
+        var user = await _userService.DeleteAsync(id, currentUserId.Value);
         if (!user.Success)
         {
             return NotFound();
@@ -96,7 +113,12 @@ public class UsersController : ControllerBase
     [HttpPatch("{id}")]
     public async Task<IActionResult> UpdateUser(int id, [FromBody]UpdatedUserDto updatedUser)
     {
-        var isUserUpdated = await _userService.UpdateUserAsync(id, updatedUser);
+        var currentUserId = _currentUserService.UserId;
+        if (currentUserId is null)
+        {
+            return Unauthorized("No permission to perform action.");
+        }
+        var isUserUpdated = await _userService.UpdateUserAsync(id, updatedUser, currentUserId.Value);
         if (!isUserUpdated.Success)
         {
             return NotFound();

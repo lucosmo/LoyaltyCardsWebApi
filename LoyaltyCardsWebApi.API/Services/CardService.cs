@@ -89,11 +89,15 @@ namespace LoyaltyCardsWebApi.API.Services
             return Result<CardDto>.Ok(cardResult.ToDto());
         }
 
-        public async Task<Result<IEnumerable<CardDto>>> GetCardsByUserIdAsync(int? userId)
+        public async Task<Result<IEnumerable<CardDto>>> GetCardsByUserIdAsync(int? userId, int? currentUserId)
         {
             if (userId is null)
             {
                 return Result<IEnumerable<CardDto>>.BadRequest("User ID is required to access cards.");
+            }
+            if (userId != currentUserId)
+            {
+                return Result<IEnumerable<CardDto>>.Forbidden("No permission");
             }
             var cards = await _cardRepository.GetCardsByUserIdAsync(userId.Value);
             return Result<IEnumerable<CardDto>>.Ok(cards.Select(card => card.ToDto()));

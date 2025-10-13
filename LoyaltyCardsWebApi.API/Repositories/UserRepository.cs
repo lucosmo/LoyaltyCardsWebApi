@@ -35,7 +35,7 @@ public class UserRepository : IUserRepository
         return users;
     }
 
-    public async Task<User?> GetUserByIdAsync(int? id)
+    public async Task<User?> GetUserByIdAsync(int id)
     {
         User? user = await _appDbContext.Users.FindAsync(id);
         return user;

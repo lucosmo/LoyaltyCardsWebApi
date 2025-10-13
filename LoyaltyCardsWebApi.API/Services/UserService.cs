@@ -41,7 +41,7 @@ public class UserService : IUserService
             return Result<UserDto>.Unauthorized("User ID not found.");
         }
 
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdAsync(userId.Value);
         
         if (user is null)
         {
@@ -50,7 +50,7 @@ public class UserService : IUserService
 
         return Result<UserDto>.Ok(user.ToDto());
     }
-    public async Task<Result<UserDto>> GetUserByIdAsync(int userId)
+    public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int currentUserId)
     {
         if (userId <= 0)
         {
@@ -71,7 +71,7 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     }
 
-    public async Task<Result<UserDto>> GetUserByEmailAsync(string email)
+    public async Task<Result<UserDto>> GetUserByEmailAsync(string email, string currentUserEmail)
     {
         if (string.IsNullOrEmpty(email))
         {
@@ -93,7 +93,7 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     }
       
-    public async Task<Result<UserDto>> DeleteAsync(int userId)
+    public async Task<Result<UserDto>> DeleteAsync(int userId, int currentUserId)
     {
         if (userId <= 0)
         {
@@ -123,7 +123,7 @@ public class UserService : IUserService
         return Result<List<UserDto>>.Ok(userDtos);
     }
 
-    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser)
+    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int currentUserId)
     {
         if (userId <= 0)
         {
