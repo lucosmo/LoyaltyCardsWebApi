@@ -4,6 +4,7 @@ using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration.UserSecrets;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -14,9 +15,11 @@ namespace LoyaltyCardsWebApi.API.Controllers
     public class CardsController : ControllerBase
     {
         private readonly ICardService _cardService;
-        public CardsController(ICardService cardService)
+        private readonly ICurrentUserService _currentUserService;
+        public CardsController(ICardService cardService, ICurrentUserService currentUserService)
         {
-            _cardService = cardService;
+            _cardService = cardService ?? throw new ArgumentNullException(nameof(cardService));
+            _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         }
 
         // GET api/<CardsController>/5
@@ -27,8 +30,8 @@ namespace LoyaltyCardsWebApi.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Get(int id)
         {
-            var userId = User.GetUserIdAsInt();
-            if (!userId.HasValue)
+            var userId = _currentUserService.UserId;
+            if (userId is null)
             {
                 return Unauthorized("User ID not found.");
             }
@@ -48,10 +51,10 @@ namespace LoyaltyCardsWebApi.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Create([FromBody] CreateCardDto newCard)
         {
-            var userId = User.GetUserIdAsInt();
-            if (!userId.HasValue)
+            var userId = _currentUserService.UserId;
+            if (userId is null)
             {
-                return Unauthorized("User ID not found.");
+                return Unauthorized("No permission to perform action.");
             }
             var cardResult = await _cardService.CreateCardAsync(newCard, userId);
             if (!cardResult.Success)
@@ -69,10 +72,10 @@ namespace LoyaltyCardsWebApi.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> UpdateCard(int id, [FromBody] UpdateCardDto updateCard)
         {
-            var userId = User.GetUserIdAsInt();
-            if (!userId.HasValue)
+            var userId = _currentUserService.UserId;
+            if (userId is null)
             {
-                return Unauthorized("User ID not found.");
+                return Unauthorized("No permission to perform action.");
             }
             var cardResult = await _cardService.UpdateCardAsync(id, updateCard, userId);
             if (!cardResult.Success)
@@ -90,10 +93,10 @@ namespace LoyaltyCardsWebApi.API.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> DeleteCardById(int id)
         {
-            var userId = User.GetUserIdAsInt();
-            if (!userId.HasValue)
+            var userId = _currentUserService.UserId;
+            if (userId is null)
             {
-                return Unauthorized("User ID not found.");
+                return Unauthorized("No permission to perform action.");
             }
 
             var cardResult = await _cardService.DeleteCardAsync(id, userId);

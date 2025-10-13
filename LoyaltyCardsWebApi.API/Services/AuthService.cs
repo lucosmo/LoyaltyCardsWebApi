@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.Data;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
@@ -10,16 +11,23 @@ namespace LoyaltyCardsWebApi.API.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IRequestContext _requestContext;
     private readonly IUserRepository _userRepository;
     private readonly IAuthRepository _authRepository;
+    private readonly ICurrentUserService _currentUserService;
     private readonly IJwtService _jwtService;
 
-    public AuthService(IHttpContextAccessor httpContextAccessor, IAuthRepository authRepository, IUserRepository userRepository, IJwtService jwtService)
+    public AuthService(
+        IRequestContext requestContext,
+        IAuthRepository authRepository,
+        IUserRepository userRepository,
+        ICurrentUserService currentUserService,
+        IJwtService jwtService)
     {
-        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
         _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
     }
     public async Task<Result<string>> LoginAsync(LoginDto loginDto)
@@ -93,10 +101,19 @@ public class AuthService : IAuthService
         return Result<UserDto>.Ok(userDto);
     }
 
+    public Result<int> GetUserId()
+    {
+        var userId = _currentUserService.UserId;
+        if (userId is null)
+        {
+            return Result<int>.Unauthorized("User ID not found in token");
+        }
+        return Result<int>.Ok(userId.Value);
+    }
     public Result<string> GetTokenAuthHeader()
     {
-        var authHeader = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
-        if (authHeader is null || authHeader.StartsWith("Bearer ") == false )
+        var authHeader = _requestContext.Authorization;
+        if (authHeader is null || authHeader.StartsWith("Bearer ") == false)
         {
             return Result<string>.Unauthorized("Token not found in Authorization header");
         }
@@ -110,20 +127,9 @@ public class AuthService : IAuthService
         return Result<string>.Ok(token);
     }
 
-    public Result<int> GetUserId()
-    {
-        var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ??
-                        _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
-        {
-            return Result<int>.Unauthorized("User ID not found in token");
-        }
-        return Result<int>.Ok(userId);
-    }
-
     public Result<DateTime> GetTokenExpiryDate()
     {
-        var expiryDateClaim = _httpContextAccessor.HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Exp)?.Value;
+        var expiryDateClaim = _requestContext.ExpiryTime;
         if (string.IsNullOrEmpty(expiryDateClaim) || !long.TryParse(expiryDateClaim, out var expiryDateSeconds))
         {
             return Result<DateTime>.NotFound("Token expiry date not found");
@@ -142,11 +148,15 @@ public class AuthService : IAuthService
         {
             return Result<string>.BadRequest("Invalid user ID.");
         }
+        if (userId != _currentUserService.UserId)
+        {
+            return Result<string>.Forbidden("No permission.");
+        }
 
         var revokedToken = await _authRepository.AddRevokedTokenAsync(token, expiryDate, userId);
         if (revokedToken is null)
         {
-            return Result<string>.Fail("Failed to revoke token. Repository returned null.");
+            return Result<string>.Fail("Failed to revoke token.");
         }
         
         return Result<string>.Ok(revokedToken.Token);        
@@ -168,6 +178,11 @@ public class AuthService : IAuthService
         if (userId <= 0)
         {
             return Result<bool>.BadRequest("Invalid user ID.");
+        }
+
+        if (userId != _currentUserService.UserId)
+        {
+            return Result<bool>.Forbidden("No permission.");
         }
 
         await _authRepository.RevokeAllTokensForUserAsync(userId);

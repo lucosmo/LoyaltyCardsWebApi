@@ -1,12 +1,8 @@
-using System.IdentityModel.Tokens.Jwt;
+using LoyaltyCardsWebApi.API.Data;
 using LoyaltyCardsWebApi.API.Data.DTOs;
-using LoyaltyCardsWebApi.API.Models;
-using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace LoyaltyCardsWebApi.API.Controllers;
 
@@ -14,11 +10,13 @@ namespace LoyaltyCardsWebApi.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IRequestContext _requestContext;
     private const string InvalidCredentialsMessage = "Invalid credentials";
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IRequestContext requestContext)
     {
-        _authService = authService;
+        _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
     }
 
     [HttpPost("login")]
@@ -32,7 +30,7 @@ public class AuthController : ControllerBase
         var tokenResult = await _authService.LoginAsync(loginDto);
         if (!tokenResult.Success)
         {
-            return BadRequest(tokenResult.Error);
+            return Unauthorized(tokenResult.Error);
         }
         
         return Ok(new {Token = tokenResult});  
@@ -45,25 +43,24 @@ public class AuthController : ControllerBase
         var tokenResult = _authService.GetTokenAuthHeader();
         if (!tokenResult.Success || string.IsNullOrEmpty(tokenResult.Value))
         {
-            return BadRequest(tokenResult.Error);
+            return Unauthorized(tokenResult.Error);
         }
 
         var userIdResult = _authService.GetUserId();
         if (!userIdResult.Success)
         {
-            return BadRequest(userIdResult.Error);
+            return Unauthorized(userIdResult.Error);
         }
 
         var expiryDateResult = _authService.GetTokenExpiryDate();
         if (!expiryDateResult.Success)
         {
-            return BadRequest(expiryDateResult.Error);
+            return Unauthorized(expiryDateResult.Error);
         }
-    
         var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, expiryDateResult.Value, userIdResult.Value);
         if (!revokeResult.Success)
         {
-            return BadRequest(revokeResult.Error);
+            return StatusCode(500, new { message = "Internal Server Error", error = revokeResult.Error });
         }
 
         return Ok(new {Message = "Successfully logged out"});

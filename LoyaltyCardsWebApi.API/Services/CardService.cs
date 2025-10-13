@@ -22,7 +22,8 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.BadRequest("User ID is required to create a card.");
             }
-            var barcodeExists = await _cardRepository.ExistsCardByBarcodeAsync(newCard.Barcode, userId);
+            
+            var barcodeExists = await _cardRepository.ExistsCardByBarcodeAsync(newCard.Barcode, userId.Value);
             if (barcodeExists)
             {
                 return Result<CardDto>.Conflict("A card with this barcode already exists for the user.");
@@ -53,7 +54,7 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.BadRequest("User ID is required to delete this card.");
             }
-            var cardResult = await _cardRepository.GetCardByIdAsync(id);
+            var cardResult = await _cardRepository.GetCardByIdAsync(id, userId.Value);
             if (cardResult is null)
             {
                 return Result<CardDto>.NotFound("Card not found.");
@@ -62,7 +63,7 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.Forbidden("You do not have permission to delete this card.");
             }
-            var cardDeleted = await _cardRepository.Delete(id);
+            var cardDeleted = await _cardRepository.Delete(id, userId.Value);
             if (cardDeleted is null)
             {
                 return Result<CardDto>.Fail("Deletion failed.");
@@ -76,7 +77,7 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.BadRequest("User ID is required to access this card.");
             }
-            var cardResult = await _cardRepository.GetCardByIdAsync(id); 
+            var cardResult = await _cardRepository.GetCardByIdAsync(id, userId.Value); 
             if (cardResult is null)
             {
                 return Result<CardDto>.NotFound("Card not found.");
@@ -94,7 +95,7 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<IEnumerable<CardDto>>.BadRequest("User ID is required to access cards.");
             }
-            var cards = await _cardRepository.GetCardsByUserIdAsync(userId);
+            var cards = await _cardRepository.GetCardsByUserIdAsync(userId.Value);
             return Result<IEnumerable<CardDto>>.Ok(cards.Select(card => card.ToDto()));
         }
 
@@ -104,18 +105,12 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.BadRequest("User ID is required to update this card.");
             }
-
-            var currentCard = await _cardRepository.GetCardByIdAsync(id);
+            var currentCard = await _cardRepository.GetCardByIdAsync(id, userId.Value);
             if (currentCard is null)
             {
                 return Result<CardDto>.NotFound("Card not found.");
             }
             
-            if (currentCard.UserId != userId)
-            {
-                return Result<CardDto>.Forbidden("You do not have permission to access this card.");
-            }
-
             Card card = new Card
             {
                 Id = id,
@@ -126,7 +121,7 @@ namespace LoyaltyCardsWebApi.API.Services
                 AddedAt = currentCard.AddedAt 
             };
             
-            var updatedCardResult = await _cardRepository.UpdateCardAsync(card);
+            var updatedCardResult = await _cardRepository.UpdateCardAsync(card, userId.Value);
             if (updatedCardResult is null)
             {
                 return Result<CardDto>.Fail("Card not found or update failed.");
