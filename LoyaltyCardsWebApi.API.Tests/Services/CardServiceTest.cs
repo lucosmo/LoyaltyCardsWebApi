@@ -92,7 +92,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test, TestCaseSource(nameof(CreateCardTestCases))]
-        public async Task CreateCard_ValidInput_ReturnsSuccess(CreateCardDto createCardDto, Card expectedCard, int? userId)
+        public async Task CreateCard_ValidInput_ReturnsSuccess(CreateCardDto createCardDto, Card expectedCard, int userId)
         {
             // Arrange
             _cardRepository.Setup(cr => cr.CreateCardAsync(It.IsAny<Card>())).ReturnsAsync(expectedCard);
@@ -120,7 +120,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test, TestCaseSource(nameof(CreateCardTestCases))]
-        public async Task CreateCard_NoUserId_ReturnsFail(CreateCardDto createCardDto, Card card, int? userId)
+        public async Task CreateCard_NoUserId_ReturnsFail(CreateCardDto createCardDto, Card card, int userId)
         {
             // Arrange
 
@@ -134,7 +134,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test, TestCaseSource(nameof(CreateCardTestCases))]
-        public async Task CreateCard_DuplicateBarcode_ReturnsFail(CreateCardDto createCardDto, Card card, int? userId)
+        public async Task CreateCard_DuplicateBarcode_ReturnsFail(CreateCardDto createCardDto, Card card, int userId)
         {
             // Arrange
 
@@ -151,7 +151,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test, TestCaseSource(nameof(CreateCardTestCases))]
-        public async Task CreateCard_CreateFailed_ReturnsFail(CreateCardDto createCardDto, Card card, int? userId)
+        public async Task CreateCard_CreateFailed_ReturnsFail(CreateCardDto createCardDto, Card card, int userId)
         {
             // Arrange
 
@@ -201,11 +201,11 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
             
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task DeleteCard_ValidInput_ReturnsSuccess(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task DeleteCard_ValidInput_ReturnsSuccess(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            _cardRepository.Setup(cr => cr.Delete(cardId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.Delete(cardId, userId)).ReturnsAsync(card);
 
             // Act
             Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, userId);
@@ -220,15 +220,15 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Value.AddedAt, Is.EqualTo(cardDto.AddedAt));
             Assert.That(result.Value.UserId, Is.EqualTo(cardDto.UserId));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.Delete(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
+            _cardRepository.Verify(cr => cr.Delete(cardId, userId), Times.Once);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task DeleteCard_NonExistentCard_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task DeleteCard_NonExistentCard_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync((Card?)null);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync((Card?)null);
 
             // Act
             Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, userId);
@@ -238,16 +238,16 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("Card not found."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.Delete(cardId), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
+            _cardRepository.Verify(cr => cr.Delete(cardId, userId), Times.Never);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task DeleteCard_NotMatchingUserId_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task DeleteCard_NotMatchingUserId_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            int? otherUserId = userId + 1;
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
+            int otherUserId = userId + 1;
 
             // Act
             Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, otherUserId);
@@ -255,14 +255,14 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             // Assert
             Assert.IsFalse(result.Success);
             Assert.IsNull(result.Value);
-            Assert.That(result.Error, Is.EqualTo("You do not have permission to delete this card."));
+            Assert.That(result.Error, Is.EqualTo("Card not found."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.Delete(cardId), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, otherUserId), Times.Once);
+            _cardRepository.Verify(cr => cr.Delete(cardId, otherUserId), Times.Never);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task DeleteCard_UserIdIsNull_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task DeleteCard_UserIdIsNull_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
             int? otherUserId = null;
@@ -275,16 +275,16 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("User ID is required to delete this card."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Never);
-            _cardRepository.Verify(cr => cr.Delete(cardId), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Never);
+            _cardRepository.Verify(cr => cr.Delete(cardId, userId), Times.Never);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task DeleteCard_NotDeletedInRepository_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task DeleteCard_NotDeletedInRepository_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            _cardRepository.Setup(cr => cr.Delete(cardId)).ReturnsAsync((Card?)null);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.Delete(cardId, userId)).ReturnsAsync((Card?)null);
 
             // Act
             Result<CardDto> result = await _cardService.DeleteCardAsync(cardId, userId);
@@ -294,15 +294,15 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("Deletion failed."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.Delete(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
+            _cardRepository.Verify(cr => cr.Delete(cardId, userId), Times.Once);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task GetCardById_ValidInput_ReturnsSuccess(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task GetCardById_ValidInput_ReturnsSuccess(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
 
             // Act
             Result<CardDto> result = await _cardService.GetCardByIdAsync(cardId, userId);
@@ -317,14 +317,14 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Value.AddedAt, Is.EqualTo(cardDto.AddedAt));
             Assert.That(result.Value.UserId, Is.EqualTo(cardDto.UserId));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task GetCardById_NullFromRepository_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task GetCardById_NullFromRepository_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync((Card?)null);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync((Card?)null);
 
             // Act
             Result<CardDto> result = await _cardService.GetCardByIdAsync(cardId, userId);
@@ -334,11 +334,11 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("Card not found."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task GetCardById_UserIdIsNull_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task GetCardById_UserIdIsNull_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
             int? otherUserId = null;
@@ -351,14 +351,14 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("User ID is required to access this card."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
-        public async Task GetCardById_NotMatchingUserIds_ReturnsFailure(CardDto cardDto, Card card, int cardId, int? userId)
+        public async Task GetCardById_NotMatchingUserIds_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
             int? otherUserId = userId + 1;
 
             // Act
@@ -367,9 +367,9 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             // Assert
             Assert.IsFalse(result.Success);
             Assert.IsNull(result.Value);
-            Assert.That(result.Error, Is.EqualTo("You do not have permission to access this card."));
+            Assert.That(result.Error, Is.EqualTo("Card not found."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, It.IsAny<int>()), Times.Once);
         }
 
         public static IEnumerable<TestCaseData> GetCardsByUserIdTestCases()
@@ -382,6 +382,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
                     NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 1)
                 },
                 1,
+                1,
                 3
             );
 
@@ -391,23 +392,25 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
                     NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 2)
                 },
                 2,
+                2,
                 1
             );
 
             yield return new TestCaseData(
                 new List<Card>(),
                 3,
+                3,
                 0
             );
         }
         [Test, TestCaseSource(nameof(GetCardsByUserIdTestCases))]
-        public async Task GetCardsByUserId_ValidInput_ReturnsSuccess(List<Card> cards, int? userId, int expectedCount)
+        public async Task GetCardsByUserId_ValidInput_ReturnsSuccess(List<Card> cards, int userId, int currentUserId, int expectedCount)
         {
             // Arrange
             _cardRepository.Setup(cr => cr.GetCardsByUserIdAsync(userId)).ReturnsAsync(cards);
 
             // Act
-            Result<IEnumerable<CardDto>> result = await _cardService.GetCardsByUserIdAsync(userId);
+            Result<IEnumerable<CardDto>> result = await _cardService.GetCardsByUserIdAsync(userId, currentUserId);
 
             // Assert
             Assert.IsTrue(result.Success);
@@ -422,16 +425,17 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         {
             // Arrange
             var userId = (int?)null;
+            var currentUserId = (int?)null;
 
             // Act
-            Result<IEnumerable<CardDto>> result = await _cardService.GetCardsByUserIdAsync(userId);
+            Result<IEnumerable<CardDto>> result = await _cardService.GetCardsByUserIdAsync(userId, currentUserId);
 
             // Assert
             Assert.IsFalse(result.Success);
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("User ID is required to access cards."));
 
-            _cardRepository.Verify(cr => cr.GetCardsByUserIdAsync(userId), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardsByUserIdAsync(It.IsAny<int>()), Times.Never);
         }
 
         public static IEnumerable<TestCaseData> UpdateCardTestCases()
@@ -463,11 +467,11 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
-        public async Task UpdateCard_ValidInput_ReturnsSuccess(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int? userId)
+        public async Task UpdateCard_ValidInput_ReturnsSuccess(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            _cardRepository.Setup(cr => cr.UpdateCardAsync(It.IsAny<Card>())).ReturnsAsync(updatedCard);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>())).ReturnsAsync(updatedCard);
 
             // Act
             Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, userId);
@@ -482,21 +486,21 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Value.AddedAt, Is.EqualTo(updatedCard.AddedAt));
             Assert.That(result.Value.UserId, Is.EqualTo(updatedCard.UserId));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
             _cardRepository.Verify(cr => cr.UpdateCardAsync(It.Is<Card>(c =>
                 c.Id == card.Id &&
                 c.Name == updatedCard.Name &&
                 c.Image == updatedCard.Image &&
                 c.Barcode == updatedCard.Barcode &&
                 c.AddedAt == card.AddedAt &&
-                c.UserId == card.UserId)), Times.Once);
+                c.UserId == card.UserId), userId), Times.Once);
         }
 
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
-        public async Task UpdateCard_InvalidCardId_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int? userId)
+        public async Task UpdateCard_InvalidCardId_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync((Card?)null);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync((Card?)null);
 
             // Act
             Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, userId);
@@ -506,16 +510,16 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("Card not found."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
-        public async Task UpdateCard_NotMatchingUserId_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int? userId)
+        public async Task UpdateCard_NotMatchingUserId_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            int? otherUserId = userId + 1;
+            int otherUserId = userId + 1;
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, otherUserId)).ReturnsAsync((Card?)null);
 
             // Act
             Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, otherUserId);
@@ -523,14 +527,14 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             // Assert
             Assert.IsFalse(result.Success);
             Assert.IsNull(result.Value);
-            Assert.That(result.Error, Is.EqualTo("You do not have permission to access this card."));
+            Assert.That(result.Error, Is.EqualTo("Card not found."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, otherUserId), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>()), Times.Never);
         }
 
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
-        public async Task UpdateCard_UserIdIsNull_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int? userId)
+        public async Task UpdateCard_UserIdIsNull_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
         {
             // Arrange
             int? otherUserId = null;
@@ -543,16 +547,16 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("User ID is required to update this card."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Never);
-            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Never);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, It.IsAny<int>()), Times.Never);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>()), Times.Never);
         }
         
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
-        public async Task UpdateCard_NotUpdatedInRepository_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int? userId)
+        public async Task UpdateCard_NotUpdatedInRepository_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
         {
             // Arrange
-            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId)).ReturnsAsync(card);
-            _cardRepository.Setup(cr => cr.UpdateCardAsync(It.IsAny<Card>())).ReturnsAsync((Card?)null);
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>())).ReturnsAsync((Card?)null);
 
             // Act
             Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, userId);
@@ -562,8 +566,8 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("Card not found or update failed."));
 
-            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId), Times.Once);
-            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>()), Times.Once);
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>()), Times.Once);
         }
     }
 }
