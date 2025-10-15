@@ -49,7 +49,8 @@ public class UsersController : ControllerBase
     [HttpGet("myaccount")]
     public async Task<IActionResult> GetCurrentUser()
     {
-        var user = await _userService.GetCurrentUserAsync();
+        var currentUserId = _currentUserService.UserId;
+        var user = await _userService.GetUserByIdAsync(currentUserId);
         if (!user.Success)
         {
             return Unauthorized();
@@ -66,7 +67,7 @@ public class UsersController : ControllerBase
         {
             return Unauthorized("No permission to perform action.");
         }
-        var user = await _userService.GetUserByIdAsync(id, currentUserId.Value);
+        var user = await _userService.GetUserByIdAsync(currentUserId.Value);
         if (!user.Success)
         {
             return NotFound();

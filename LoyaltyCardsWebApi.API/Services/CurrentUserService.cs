@@ -29,7 +29,7 @@ public class CurrentUserService : ICurrentUserService
             if (parseResult)
             {
                 _logger.LogInformation(
-                    "UserId Lazy eval successful; raw={Raw}, parsed={parseResult}, correlationId = {CorrelatioId}, trace = {Trace}",
+                    "UserId Lazy eval successful; raw={Raw}, parsed={parseResult}, correlationId = {CorrelationId}, trace = {Trace}",
                     id,
                     parseResult,
                     _requestContext.CorrelationId,
@@ -40,7 +40,7 @@ public class CurrentUserService : ICurrentUserService
             else
             {
                 _logger.LogInformation(
-                    "UserId Lazy eval failed; parsed={parseResult}, correlationId = {CorrelatioId}, trace = {Trace}",
+                    "UserId Lazy eval failed; parsed={parseResult}, correlationId = {CorrelationId}, trace = {Trace}",
                     parseResult,
                     _requestContext.CorrelationId,
                     _requestContext.TraceIdentifier
@@ -55,7 +55,7 @@ public class CurrentUserService : ICurrentUserService
                         HttpContext?.User.FindFirst(EmailClaimType)?.Value;
 
             _logger.LogInformation(
-                "UserEmail Lazy eval successful; raw={Raw}, correlationId = {CorrelatioId}, trace = {Trace}",
+                "UserEmail Lazy eval successful; raw={Raw}, correlationId = {CorrelationId}, trace = {Trace}",
                 email,
                 _requestContext.CorrelationId,
                 _requestContext.TraceIdentifier

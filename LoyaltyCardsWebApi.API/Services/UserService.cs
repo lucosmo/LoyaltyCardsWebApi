@@ -8,11 +8,9 @@ namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
-    private readonly ICurrentUserService _currentUserService;
 
     public UserService(IUserRepository userRepository, ICurrentUserService currentUserService)
     {
-        _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     }
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
@@ -32,36 +30,18 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
 
-    public async Task<Result<UserDto>> GetCurrentUserAsync()
+    public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId)
     {
-        var userId = _currentUserService.UserId;
-        
-        if (userId is null)
-        {
-            return Result<UserDto>.Unauthorized("User ID not found.");
-        }
-
-        var user = await _userRepository.GetUserByIdAsync(userId.Value);
-        
-        if (user is null)
-        {
-            return Result<UserDto>.NotFound("User not found.");
-        }
-
-        return Result<UserDto>.Ok(user.ToDto());
-    }
-    public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int currentUserId)
-    {
-        if (userId <= 0)
+        if (currentUserId <= 0)
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
-        if (userId != _currentUserService.UserId)
+        if (currentUserId is null)
         {
             return Result<UserDto>.Forbidden("No permission.");
         }
 
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdAsync(currentUserId.Value);
 
         if (user is null)
         {
@@ -71,19 +51,14 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     }
 
-    public async Task<Result<UserDto>> GetUserByEmailAsync(string email, string currentUserEmail)
+    public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail)
     {
-        if (string.IsNullOrEmpty(email))
+        if (string.IsNullOrEmpty(currentUserEmail))
         {
             return Result<UserDto>.BadRequest("Invalid email.");    
         }
 
-        if (!string.Equals(email, _currentUserService.UserEmail, StringComparison.OrdinalIgnoreCase))
-        {
-            return Result<UserDto>.Forbidden("No permission.");
-        }
-
-        var user = await _userRepository.GetUserByEmailAsync(email);
+        var user = await _userRepository.GetUserByEmailAsync(currentUserEmail);
 
         if (user is null)
         {
@@ -100,7 +75,7 @@ public class UserService : IUserService
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
 
-        if (userId != _currentUserService.UserId)
+        if (userId != currentUserId)
         {
             return Result<UserDto>.Forbidden("No permission.");
         }
@@ -130,7 +105,7 @@ public class UserService : IUserService
             return Result<bool>.BadRequest("Invalid user ID.");
         }
 
-        if (userId != _currentUserService.UserId)
+        if (userId != currentUserId)
         {
             return Result<bool>.Forbidden("No permission.");
         }

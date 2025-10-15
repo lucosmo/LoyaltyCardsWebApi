@@ -1,10 +1,7 @@
 ﻿using LoyaltyCardsWebApi.API.Data.DTOs;
-using LoyaltyCardsWebApi.API.Extensions;
-using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration.UserSecrets;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
