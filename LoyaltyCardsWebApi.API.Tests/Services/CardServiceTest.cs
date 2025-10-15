@@ -382,7 +382,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
                     NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 1)
                 },
                 1,
-                1,
+                (int?)1,
                 3
             );
 
@@ -392,19 +392,19 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
                     NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 2)
                 },
                 2,
-                2,
+                (int?)2,
                 1
             );
 
             yield return new TestCaseData(
                 new List<Card>(),
                 3,
-                3,
+                (int?)3,
                 0
             );
         }
         [Test, TestCaseSource(nameof(GetCardsByUserIdTestCases))]
-        public async Task GetCardsByUserId_ValidInput_ReturnsSuccess(List<Card> cards, int userId, int currentUserId, int expectedCount)
+        public async Task GetCardsByUserId_ValidInput_ReturnsSuccess(List<Card> cards, int userId, int? currentUserId, int expectedCount)
         {
             // Arrange
             _cardRepository.Setup(cr => cr.GetCardsByUserIdAsync(userId)).ReturnsAsync(cards);

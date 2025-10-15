@@ -32,15 +32,14 @@ public class UserService : IUserService
 
     public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId)
     {
-        if (currentUserId <= 0)
-        {
-            return Result<UserDto>.BadRequest("Invalid user ID.");
-        }
-        if (currentUserId is null)
+        if (!currentUserId.HasValue)
         {
             return Result<UserDto>.Forbidden("No permission.");
         }
-
+        if (currentUserId.Value <= 0)
+        {
+            return Result<UserDto>.BadRequest("Invalid user ID.");
+        }
         var user = await _userRepository.GetUserByIdAsync(currentUserId.Value);
 
         if (user is null)
@@ -49,6 +48,17 @@ public class UserService : IUserService
         }
 
         return Result<UserDto>.Ok(user.ToDto());
+    }
+    public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int? currentUserId)
+    {
+        if (!currentUserId.HasValue || userId != currentUserId.Value)
+        {
+            return Result<UserDto>.Forbidden("No permission.");
+        }
+
+        var user = await GetUserByIdAsync(currentUserId.Value);
+
+        return user;
     }
 
     public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail)
