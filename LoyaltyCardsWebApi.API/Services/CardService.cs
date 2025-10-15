@@ -97,7 +97,7 @@ namespace LoyaltyCardsWebApi.API.Services
             }
             if (userId != currentUserId)
             {
-                return Result<IEnumerable<CardDto>>.Forbidden("No permission");
+                return Result<IEnumerable<CardDto>>.Forbidden("No permission.");
             }
             var cards = await _cardRepository.GetCardsByUserIdAsync(userId.Value);
             return Result<IEnumerable<CardDto>>.Ok(cards.Select(card => card.ToDto()));

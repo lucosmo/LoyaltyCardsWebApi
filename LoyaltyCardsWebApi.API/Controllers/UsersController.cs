@@ -46,7 +46,7 @@ public class UsersController : ControllerBase
     }
 
     [Authorize]
-    [HttpGet("/myaccount")]
+    [HttpGet("myaccount")]
     public async Task<IActionResult> GetCurrentUser()
     {
         var currentUserId = _currentUserService.UserId;

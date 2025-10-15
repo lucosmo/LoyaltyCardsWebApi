@@ -9,7 +9,7 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
 
-    public UserService(IUserRepository userRepository, ICurrentUserService currentUserService)
+    public UserService(IUserRepository userRepository)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     }
@@ -30,6 +30,16 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
 
+    private async Task<Result<UserDto>> GetUserByIdCoreAsync(int userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user is null)
+        {
+            return Result<UserDto>.NotFound("User not found.");
+        }
+        return Result<UserDto>.Ok(user.ToDto());
+    } 
     public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId)
     {
         if (!currentUserId.HasValue)
@@ -40,14 +50,8 @@ public class UserService : IUserService
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
-        var user = await _userRepository.GetUserByIdAsync(currentUserId.Value);
 
-        if (user is null)
-        {
-            return Result<UserDto>.NotFound("User not found.");
-        }
-
-        return Result<UserDto>.Ok(user.ToDto());
+        return await GetUserByIdCoreAsync(currentUserId.Value);
     }
     public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int? currentUserId)
     {
@@ -56,9 +60,7 @@ public class UserService : IUserService
             return Result<UserDto>.Forbidden("No permission.");
         }
 
-        var user = await GetUserByIdAsync(currentUserId.Value);
-
-        return user;
+        return await GetUserByIdCoreAsync(currentUserId.Value);
     }
 
     public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail)
