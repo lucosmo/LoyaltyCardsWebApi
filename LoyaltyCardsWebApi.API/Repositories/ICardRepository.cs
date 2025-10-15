@@ -6,10 +6,9 @@ namespace LoyaltyCardsWebApi.API.Repositories;
 public interface ICardRepository
 {
     Task<Card?> CreateCardAsync(Card newCard);
-    Task<Card?> Delete(int id);
-    Task<bool> ExistsCardByBarcodeAsync(string barcode, int? userId);
-    Task<IEnumerable<Card>> GetCards();
-    Task<Card?> GetCardByIdAsync(int id);
-    Task<IEnumerable<Card>> GetCardsByUserIdAsync(int? id);
-    Task<Card?> UpdateCardAsync(Card updateCard);
+    Task<Card?> Delete(int id, int userId);
+    Task<bool> ExistsCardByBarcodeAsync(string barcode, int userId);
+    Task<Card?> GetCardByIdAsync(int id, int userId);
+    Task<IEnumerable<Card>> GetCardsByUserIdAsync(int userId);
+    Task<Card?> UpdateCardAsync(Card updateCard, int userId);
 }

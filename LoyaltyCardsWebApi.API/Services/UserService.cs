@@ -1,7 +1,6 @@
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
-using System.Security.Claims;
 using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Common;
 
@@ -9,11 +8,9 @@ namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public UserService(IUserRepository userRepository, IHttpContextAccessor httpContextAccessor)
+    public UserService(IUserRepository userRepository)
     {
-        _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     }
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
@@ -33,48 +30,48 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
 
-    public async Task<Result<UserDto>> GetCurrentUserAsync()
+    private async Task<Result<UserDto>> GetUserByIdCoreAsync(int userId)
     {
-        var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim is null || !int.TryParse(userIdClaim.Value, out int userId))
-        {
-            return Result<UserDto>.Unauthorized("User ID not found.");
-        }
-
         var user = await _userRepository.GetUserByIdAsync(userId);
 
         if (user is null)
         {
             return Result<UserDto>.NotFound("User not found.");
         }
-
         return Result<UserDto>.Ok(user.ToDto());
-    }
-    public async Task<Result<UserDto>> GetUserByIdAsync(int userId)
+    } 
+    public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId)
     {
-        if (userId <= 0)
+        if (!currentUserId.HasValue)
+        {
+            return Result<UserDto>.Forbidden("No permission.");
+        }
+        if (currentUserId.Value <= 0)
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
-        var user = await _userRepository.GetUserByIdAsync(userId);
 
-        if (user is null)
+        return await GetUserByIdCoreAsync(currentUserId.Value);
+    }
+    public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int? currentUserId)
+    {
+        if (!currentUserId.HasValue || userId != currentUserId.Value)
         {
-            return Result<UserDto>.NotFound("User not found.");
+            return Result<UserDto>.Forbidden("No permission.");
         }
 
-        return Result<UserDto>.Ok(user.ToDto());
+        return await GetUserByIdCoreAsync(currentUserId.Value);
     }
 
-    public async Task<Result<UserDto>> GetUserByEmailAsync(string email)
+    public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail)
     {
-        if (string.IsNullOrEmpty(email))
+        if (string.IsNullOrEmpty(currentUserEmail))
         {
             return Result<UserDto>.BadRequest("Invalid email.");    
         }
 
-        var user = await _userRepository.GetUserByEmailAsync(email);
-        
+        var user = await _userRepository.GetUserByEmailAsync(currentUserEmail);
+
         if (user is null)
         {
             return Result<UserDto>.NotFound("User not found.");
@@ -83,12 +80,18 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     }
       
-    public async Task<Result<UserDto>> DeleteAsync(int userId)
+    public async Task<Result<UserDto>> DeleteAsync(int userId, int currentUserId)
     {
         if (userId <= 0)
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
+
+        if (userId != currentUserId)
+        {
+            return Result<UserDto>.Forbidden("No permission.");
+        }
+
         var user = await _userRepository.DeleteAsync(userId);
 
         if (user is null)
@@ -107,17 +110,22 @@ public class UserService : IUserService
         return Result<List<UserDto>>.Ok(userDtos);
     }
 
-    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser)
+    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int currentUserId)
     {
         if (userId <= 0)
         {
             return Result<bool>.BadRequest("Invalid user ID.");
         }
 
-        if (updatedUser is null)
+        if (userId != currentUserId)
         {
-            return Result<bool>.BadRequest("User data is required.");
+            return Result<bool>.Forbidden("No permission.");
         }
+
+        if (updatedUser is null)
+            {
+                return Result<bool>.BadRequest("User data is required.");
+            }
         var existingUser = await _userRepository.GetUserByIdAsync(userId); 
         if (existingUser is null)
         {

@@ -1,3 +1,4 @@
+using LoyaltyCardsWebApi.API.Data;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
@@ -13,16 +14,18 @@ public class AuthServiceTest
     private Mock<IUserRepository> _userRepository;
     private Mock<IJwtService> _jwtService;
     private Mock<IAuthRepository> _authRepository;
-    private Mock<IHttpContextAccessor> _httpContextAccessor;
+    private Mock<IRequestContext> _requestContext;
+    private Mock<ICurrentUserService> _currentUserService;
     private AuthService _authService;
     [SetUp]
     public void SetUp()
     {
-        _httpContextAccessor = new Mock<IHttpContextAccessor>();
+        _currentUserService = new Mock<ICurrentUserService>();
+        _requestContext = new Mock<IRequestContext>();
         _authRepository = new Mock<IAuthRepository>();
         _userRepository = new Mock<IUserRepository>();
         _jwtService = new Mock<IJwtService>();
-        _authService = new AuthService(_httpContextAccessor.Object, _authRepository.Object, _userRepository.Object, _jwtService.Object);
+        _authService = new AuthService(_requestContext.Object, _authRepository.Object, _userRepository.Object, _currentUserService.Object, _jwtService.Object);
     }
 
     [Test]

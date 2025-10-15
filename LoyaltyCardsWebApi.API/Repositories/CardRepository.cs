@@ -20,9 +20,12 @@ public class CardRepository : ICardRepository
         return createdCard.Entity;
     }
 
-    public async Task<Card?> Delete(int id)
+    public async Task<Card?> Delete(int id, int userId)
     {
-        var cardToDelete = await _appDbContext.Cards.FindAsync(id);
+        var cardToDelete = await _appDbContext.Cards
+            .Where(c => c.Id == id && c.UserId == userId)
+            .FirstOrDefaultAsync();
+
         if (cardToDelete != null)
         {
             _appDbContext.Cards.Remove(cardToDelete);
@@ -35,21 +38,19 @@ public class CardRepository : ICardRepository
         }
     }
 
-    public async Task<Card?> GetCardByIdAsync(int id)
+    public async Task<Card?> GetCardByIdAsync(int id, int userId)
     {
         var card = await _appDbContext.Cards
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
         return card;
     }
 
-    public Task<IEnumerable<Card>> GetCards()
+    public async Task<Card?> UpdateCardAsync(Card updateCard, int userId)
     {
-        throw new NotImplementedException();
-    }
+        var existingCard = await _appDbContext.Cards
+            .Where(c => c.Id == updateCard.Id && c.UserId == userId)
+            .FirstOrDefaultAsync();
 
-    public async Task<Card?> UpdateCardAsync(Card updateCard)
-    {
-        var existingCard = await _appDbContext.Cards.FindAsync(updateCard.Id);
         if (existingCard != null)
         {
             existingCard.Name = updateCard.Name;
@@ -65,14 +66,17 @@ public class CardRepository : ICardRepository
         }
     }
 
-    public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int? id)
+    public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int userId)
     {
-        var cards = await _appDbContext.Cards.Where(c => c.UserId == id).ToListAsync();
+        var cards = await _appDbContext.Cards
+            .Where(c => c.UserId == userId)
+            .ToListAsync();
         return cards;
     }
 
-    public async Task<bool> ExistsCardByBarcodeAsync(string barcode, int? userId)
+    public async Task<bool> ExistsCardByBarcodeAsync(string barcode, int userId)
     {
-        return await _appDbContext.Cards.AnyAsync(c => c.Barcode == barcode && c.UserId == userId);
+        return await _appDbContext.Cards
+                    .AnyAsync(c => c.Barcode == barcode && c.UserId == userId);
     }
 }
