@@ -8,7 +8,7 @@ public class ValidateNotEmptyIfProvided : ValidationAttribute
     {
         if (value is not null && value is not string)
         {
-            return new ValidationResult($"{validationContext.DisplayName} is wrong type.");
+            return new ValidationResult($"{validationContext.DisplayName} has an invalid type.");
         }
         if (value is not null && string.IsNullOrWhiteSpace((string)value))
         {
