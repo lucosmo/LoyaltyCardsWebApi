@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using LoyaltyCardsWebApi.API.Attributes;
 
 namespace LoyaltyCardsWebApi.API.Data.DTOs
 {

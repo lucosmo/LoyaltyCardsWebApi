@@ -10,10 +10,6 @@ public class ValidateNotEmptyIfProvided : ValidationAttribute
         {
             return ValidationResult.Success;
         }
-        if (value is not string)
-        {
-            throw new ValidationException($"{validationContext.DisplayName} must be a string.");
-        }
         if (value is string strValue && string.IsNullOrWhiteSpace(strValue))
         {
             return new ValidationResult($"{validationContext.DisplayName} can't be empty or whitespace.");
