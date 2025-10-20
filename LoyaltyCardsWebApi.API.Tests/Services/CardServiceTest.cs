@@ -57,7 +57,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             UserId = userId
         };
 
-        private static UpdateCardDto NewUpdateCardDto(string name, string image, string barcode) => new UpdateCardDto
+        private static UpdateCardDto NewUpdateCardDto(string? name, string? image, string? barcode) => new UpdateCardDto
         {
             Name = name,
             Image = image,
@@ -550,7 +550,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, It.IsAny<int>()), Times.Never);
             _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>()), Times.Never);
         }
-        
+
         [Test, TestCaseSource(nameof(UpdateCardTestCases))]
         public async Task UpdateCard_NotUpdatedInRepository_ReturnsFailure(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
         {
@@ -568,6 +568,67 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
 
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
             _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>()), Times.Once);
+        }
+        
+        public static IEnumerable<TestCaseData> UpdatePartialCardTestCases()
+        {
+            yield return new TestCaseData(
+                NewUpdateCardDto(name: "Card1_update", image: "test11_update.jpg", barcode: null),
+                NewCard(1, "Card1", "test.jpg", "1234567890", TimeData.FixedTime1, 1),
+                NewCard(1, "Card1_update", "test11_update.jpg", "1234567890", TimeData.FixedTime1, 1),
+                1, 1
+            );
+            yield return new TestCaseData(
+                NewUpdateCardDto("Card2_update", null, "1234567890_2_update"),
+                NewCard(2, "Card2", "test2.jpg", "1234567890_2", TimeData.FixedTime2, 2),
+                NewCard(2, "Card2_update", "test2.jpg", "1234567890_2_update", TimeData.FixedTime2, 2),
+                2, 2
+            );
+            yield return new TestCaseData(
+                NewUpdateCardDto(null, "test33_update.jpg", "1234567890_3_update"),
+                NewCard(3, "Card3", "test3.jpg", "1234567890_3", TimeData.FixedTime3, 3),
+                NewCard(3, "Card3", "test33_update.jpg", "1234567890_3_update", TimeData.FixedTime3, 3),
+                3, 3
+            );
+            yield return new TestCaseData(
+                NewUpdateCardDto(null, null, null),
+                NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 4),
+                NewCard(4, "Card4", "test4.jpg", "1234567890_4", TimeData.FixedTime4, 4),
+                4, 4
+            );
+        }
+
+        [Test, TestCaseSource(nameof(UpdatePartialCardTestCases))]
+        public async Task UpdatePartialCard_ValidInput_ReturnsSuccess(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
+        {
+            // Arrange
+            _cardRepository.Setup(cr => cr.GetCardByIdAsync(cardId, userId)).ReturnsAsync(card);
+            _cardRepository.Setup(cr => cr.UpdateCardAsync(It.IsAny<Card>(), userId)).ReturnsAsync(updatedCard);
+
+            // Act
+            Result<CardDto> result = await _cardService.UpdateCardAsync(cardId, updateCardDto, userId);
+
+            // Assert
+            Assert.IsTrue(result.Success);
+            Assert.IsNotNull(result.Value);
+            Assert.That(result.Value.Id, Is.EqualTo(updatedCard.Id));
+            Assert.That(result.Value.Name, Is.EqualTo(updatedCard.Name));
+            Assert.That(result.Value.Image, Is.EqualTo(updatedCard.Image));
+            Assert.That(result.Value.Barcode, Is.EqualTo(updatedCard.Barcode));
+            Assert.That(result.Value.AddedAt, Is.EqualTo(updatedCard.AddedAt));
+            Assert.That(result.Value.UserId, Is.EqualTo(updatedCard.UserId));
+
+
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(
+                It.Is<Card>(c =>
+                    c.Id == updatedCard.Id &&
+                    c.Name == updatedCard.Name &&
+                    c.Image == updatedCard.Image &&
+                    c.Barcode == updatedCard.Barcode &&
+                    c.UserId == updatedCard.UserId &&
+                    c.AddedAt == updatedCard.AddedAt),
+                userId), Times.Once);
         }
     }
 }
