@@ -6,11 +6,11 @@ public class ValidateNotEmptyIfProvided : ValidationAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        if (value is not null && value is not string)
+        if (value is null)
         {
-            return new ValidationResult($"{validationContext.DisplayName} has an invalid type.");
+            return ValidationResult.Success;
         }
-        if (value is not null && string.IsNullOrWhiteSpace((string)value))
+        if (string.IsNullOrWhiteSpace((string)value))
         {
             return new ValidationResult($"{validationContext.DisplayName} can't be empty or whitespace.");
         }
