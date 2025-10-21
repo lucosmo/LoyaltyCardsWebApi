@@ -40,6 +40,7 @@ namespace LoyaltyCardsWebApi.API.ExceptionHandling
 
             var problemDetails = new ProblemDetails
             {
+                Type = $"https://httpstatuses.com/{status}",
                 Title = title,
                 Status = status,
                 Detail = exception.Message,
