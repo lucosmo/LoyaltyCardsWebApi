@@ -1,6 +1,6 @@
 namespace LoyaltyCardsWebApi.API.Common;
 
-public enum ErrorType
+public enum ErrorTypes
 {
     None,
     NotFound,
