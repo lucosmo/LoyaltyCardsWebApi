@@ -6,7 +6,7 @@ namespace LoyaltyCardsWebApi.API.Controllers.Results;
 public class ApiResult<T> : IActionResult
 {
     private readonly Result<T> _result;
-    private const string errorTitle = "An error occured.";
+    private const string errorTitle = "An error occurred.";
     public ApiResult(Result<T> result)
     {
         _result = result;
