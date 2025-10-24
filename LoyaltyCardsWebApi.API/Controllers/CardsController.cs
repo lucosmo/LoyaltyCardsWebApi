@@ -1,4 +1,6 @@
-﻿using LoyaltyCardsWebApi.API.Data.DTOs;
+﻿using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.Controllers.Results;
+using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,16 +30,8 @@ namespace LoyaltyCardsWebApi.API.Controllers
         public async Task<IActionResult> Get(int id)
         {
             var userId = _currentUserService.UserId;
-            if (userId is null)
-            {
-                return Unauthorized("User ID not found.");
-            }
             var cardResult = await _cardService.GetCardByIdAsync(id, userId);
-            if (!cardResult.Success)
-            {
-                return NotFound(cardResult.Error);
-            }
-            return Ok(cardResult.Value);
+            return new ApiResult<CardDto>(cardResult);
         }
 
         // POST api/<CardsController>
@@ -49,16 +43,14 @@ namespace LoyaltyCardsWebApi.API.Controllers
         public async Task<IActionResult> Create([FromBody] CreateCardDto newCard)
         {
             var userId = _currentUserService.UserId;
-            if (userId is null)
-            {
-                return Unauthorized("No permission to perform action.");
-            }
             var cardResult = await _cardService.CreateCardAsync(newCard, userId);
-            if (!cardResult.Success)
+            var location = Url.Action(nameof(Get), new { id = cardResult.Value?.Id });
+
+            if(cardResult.Success && cardResult.Value is not null && location is not null)
             {
-                return BadRequest(cardResult.Error);
+                return new ApiResult<CardDto>(Result<CardDto>.Created(cardResult.Value, location));    
             }
-            return CreatedAtAction(nameof(Get), new { id = cardResult.Value?.Id }, cardResult.Value);
+            return new ApiResult<CardDto>(cardResult);
         }
 
         // PATCH api/<CardsController>/5
@@ -70,16 +62,8 @@ namespace LoyaltyCardsWebApi.API.Controllers
         public async Task<IActionResult> UpdateCard(int id, [FromBody] UpdateCardDto updateCard)
         {
             var userId = _currentUserService.UserId;
-            if (userId is null)
-            {
-                return Unauthorized("No permission to perform action.");
-            }
             var cardResult = await _cardService.UpdateCardAsync(id, updateCard, userId);
-            if (!cardResult.Success)
-            {
-                return NotFound(cardResult.Error);
-            }
-            return Ok(cardResult.Value);
+            return new ApiResult<CardDto>(cardResult);
         }
 
         // DELETE api/<CardsController>/5
@@ -91,17 +75,8 @@ namespace LoyaltyCardsWebApi.API.Controllers
         public async Task<IActionResult> DeleteCardById(int id)
         {
             var userId = _currentUserService.UserId;
-            if (userId is null)
-            {
-                return Unauthorized("No permission to perform action.");
-            }
-
             var cardResult = await _cardService.DeleteCardAsync(id, userId);
-            if (!cardResult.Success)
-            {
-                return NotFound(cardResult.Error);
-            }
-            return Ok(cardResult.Value);
+            return new ApiResult<CardDto>(cardResult);
         }
     }
 }
