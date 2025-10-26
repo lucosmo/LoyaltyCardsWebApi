@@ -32,15 +32,16 @@ public class ApiResult<T> : IActionResult
                     _result.Error,
                     GetStatusCode(_result.ErrorType),
                     context.HttpContext.Request.Path,
-                    errorTitle
+                    errorTitle,
+                    context.HttpContext.TraceIdentifier
                     ));
         }    
         await response.ExecuteResultAsync(context);
     }
 
-    private ProblemDetails CreateProblemDetails(string? message, int statusCode, string instance, string title)
+    private ProblemDetails CreateProblemDetails(string? message, int statusCode, string instance, string title, string traceId)
     {
-        return new ProblemDetails
+        var problemDetails = new ProblemDetails
         {
             Type = $"https://httpstatuses.com/{statusCode}",
             Title = title,
@@ -48,6 +49,8 @@ public class ApiResult<T> : IActionResult
             Detail = message,
             Instance = instance
         };
+        problemDetails.Extensions["traceId"] = traceId;
+        return problemDetails;  
     }
 
     static int GetStatusCode(ErrorTypes errorType)
@@ -62,5 +65,4 @@ public class ApiResult<T> : IActionResult
             _ => StatusCodes.Status500InternalServerError
         };
     }
-
 }
