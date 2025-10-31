@@ -10,6 +10,9 @@ using LoyaltyCardsWebApi.API.Middleware;
 using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.ExceptionHandling;
 using LoyaltyCardsWebApi.API.Data;
+using System.Text.Json;
+using System.Diagnostics;
+using Microsoft.AspNetCore.Http.Features;
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +44,30 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["JWT_Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
     };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            var statusCode = StatusCodes.Status401Unauthorized;
+            var details = !string.IsNullOrEmpty(context.Error)
+                ? context.Error : !string.IsNullOrEmpty(context.ErrorDescription)
+                    ? context.ErrorDescription : "Authentication failed.";
+            var title = "Unauthorized.";
+            
+            var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
+                    context.HttpContext,
+                    title,
+                    statusCode,
+                    details
+                );
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/problem+json";
+            var json = JsonSerializer.Serialize(problemDetails);
+            await context.Response.WriteAsync(json, Encoding.UTF8);
+        }
+    };
 });
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
@@ -66,7 +93,6 @@ builder.Logging.AddConsole();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -76,12 +102,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<TokenRevocationMiddleware>();
 app.UseExceptionHandler();
-
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TokenRevocationMiddleware>();
 app.MapControllers();
 /*
 var summaries = new[]

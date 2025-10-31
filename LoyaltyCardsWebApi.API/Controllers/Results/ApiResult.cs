@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using LoyaltyCardsWebApi.API.Common;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoyaltyCardsWebApi.API.Controllers.Results;
@@ -17,9 +19,9 @@ public class ApiResult<T> : IActionResult
         ArgumentNullException.ThrowIfNull(context);
         ObjectResult response;
 
-        if (_result.Success)
+        if (_result.Success && _result.SuccessType is not null)
         {
-            int statusCode = _result.SuccessType == SuccessTypes.Ok ? StatusCodes.Status200OK : StatusCodes.Status201Created;
+            int statusCode = GetSuccessStatusCode(_result.SuccessType.Value);
             response = new ObjectResult(_result.Value) { StatusCode = statusCode };
             if (statusCode == StatusCodes.Status201Created && !string.IsNullOrEmpty(_result.Location))
             {
@@ -28,32 +30,18 @@ public class ApiResult<T> : IActionResult
         }
         else
         {
-            response = new ObjectResult(CreateProblemDetails(
-                    _result.Error,
-                    GetStatusCode(_result.ErrorType),
-                    context.HttpContext.Request.Path,
+            var detail = !string.IsNullOrEmpty(_result.Error) ? _result.Error : "Authentication failed.";
+            response = new ObjectResult(ProblemDetailsHelper.CreateProblemDetails(
+                    context.HttpContext,
                     errorTitle,
-                    context.HttpContext.TraceIdentifier
+                    GetErrorStatusCode(_result.ErrorType),
+                    detail
                     ));
-        }    
+        }
         await response.ExecuteResultAsync(context);
     }
 
-    private ProblemDetails CreateProblemDetails(string? message, int statusCode, string instance, string title, string traceId)
-    {
-        var problemDetails = new ProblemDetails
-        {
-            Type = $"https://httpstatuses.com/{statusCode}",
-            Title = title,
-            Status = statusCode,
-            Detail = message,
-            Instance = instance
-        };
-        problemDetails.Extensions["traceId"] = traceId;
-        return problemDetails;  
-    }
-
-    static int GetStatusCode(ErrorTypes errorType)
+    static int GetErrorStatusCode(ErrorTypes errorType)
     {
         return errorType switch
         {
@@ -63,6 +51,16 @@ public class ApiResult<T> : IActionResult
             ErrorTypes.Forbidden => StatusCodes.Status403Forbidden,
             ErrorTypes.Conflict => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status500InternalServerError
+        };
+    }
+
+    static int GetSuccessStatusCode(SuccessTypes successType)
+    {
+        return successType switch
+        {
+            SuccessTypes.Created => StatusCodes.Status201Created,
+            SuccessTypes.NoContent => StatusCodes.Status204NoContent,
+            _ => StatusCodes.Status200OK
         };
     }
 }
