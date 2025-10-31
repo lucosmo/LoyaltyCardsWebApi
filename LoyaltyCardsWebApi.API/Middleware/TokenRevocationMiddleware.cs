@@ -1,9 +1,7 @@
-using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Services;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace LoyaltyCardsWebApi.API.Middleware;
 
@@ -28,11 +26,6 @@ public class TokenRevocationMiddleware
                 var title = "Unauthorized";
                 var statusCode = StatusCodes.Status401Unauthorized;
                 var details = "Invalid token";
-                /*var instance = $"{context.Request.Method} {context.Request.Path}";
-                var requestId = context.TraceIdentifier;
-                Activity? activity = context.Features.Get<IHttpActivityFeature>()?.Activity;
-                var traceId = activity?.Id;*/
-
                 var problemDetails = ProblemDetailsHelper.CreateProblemDetails(context, title, statusCode, details);
                 var json = JsonSerializer.Serialize(problemDetails);
                 context.Response.StatusCode = statusCode;
