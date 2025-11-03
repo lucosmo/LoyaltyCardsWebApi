@@ -168,7 +168,7 @@ public class AuthService : IAuthService
             return Result<string>.Fail("Failed to revoke token.");
         }
               
-        return Result<string>.Fail("Failed to revoke token.");
+        return Result<string>.Ok("Token successfully revoked");
     }
 
     public async Task<bool> IsTokenRevokedAsync(string token)
