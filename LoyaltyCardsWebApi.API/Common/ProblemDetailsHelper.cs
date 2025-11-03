@@ -25,8 +25,14 @@ public static class ProblemDetailsHelper
             Detail = details,
             Instance = instance
         };
-        problemDetails.Extensions["requestId"] = requestId;
-        problemDetails.Extensions["traceId"] = traceId;
+        if (!string.IsNullOrEmpty(requestId))
+        {
+            problemDetails.Extensions["requestId"] = requestId;
+        }
+        if (!string.IsNullOrEmpty(traceId))
+        {
+            problemDetails.Extensions["traceId"] = traceId;    
+        }
         return problemDetails;
     }
 
@@ -34,9 +40,8 @@ public static class ProblemDetailsHelper
     {
         var instance = $"{httpContext.Request.Method} {httpContext.Request.Path}" ?? string.Empty;
         var requestId = httpContext.TraceIdentifier ?? string.Empty;
-        Activity? activity = httpContext.Features.Get<IHttpActivityFeature>()?.Activity;
-        var traceId = activity?.Id ?? string.Empty;
-
+        Activity? activity = httpContext.Features.Get<IHttpActivityFeature>()?.Activity ?? Activity.Current;
+        var traceId = activity?.TraceId.ToString() ?? string.Empty;
         return (instance, requestId, traceId);
     }
 }

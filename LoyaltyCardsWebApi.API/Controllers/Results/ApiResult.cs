@@ -22,11 +22,16 @@ public class ApiResult<T> : IActionResult
         if (_result.Success && _result.SuccessType is not null)
         {
             int statusCode = GetSuccessStatusCode(_result.SuccessType.Value);
-            response = new ObjectResult(_result.Value) { StatusCode = statusCode };
+            if (statusCode == StatusCodes.Status204NoContent)
+            {
+                context.HttpContext.Response.StatusCode = statusCode;
+                return;
+            }
             if (statusCode == StatusCodes.Status201Created && !string.IsNullOrEmpty(_result.Location))
             {
                 context.HttpContext.Response.Headers.Location = _result.Location;
             }
+            response = new ObjectResult(_result.Value) { StatusCode = statusCode };
         }
         else
         {
