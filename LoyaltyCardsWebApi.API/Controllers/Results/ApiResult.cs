@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using LoyaltyCardsWebApi.API.Common;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LoyaltyCardsWebApi.API.Controllers.Results;
@@ -35,7 +33,7 @@ public class ApiResult<T> : IActionResult
         }
         else
         {
-            var detail = !string.IsNullOrEmpty(_result.Error) ? _result.Error : "Authentication failed.";
+            var detail = !string.IsNullOrEmpty(_result.Error) ? _result.Error : "An error occurred.";
             response = new ObjectResult(ProblemDetailsHelper.CreateProblemDetails(
                     context.HttpContext,
                     errorTitle,

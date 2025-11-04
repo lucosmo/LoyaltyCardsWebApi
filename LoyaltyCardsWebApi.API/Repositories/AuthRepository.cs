@@ -31,7 +31,6 @@ public class AuthRepository : IAuthRepository
 
     public async Task<bool> IsTokenRevokedAsync(string token)
     {
-        //return await _appDbContext.RevokedToken.AnyAsync(rt => rt.Token == token && rt.ExpiryTime > DateTime.UtcNow);
         return await _appDbContext.RevokedToken.AnyAsync(rt => rt.Token == token);
     }
 

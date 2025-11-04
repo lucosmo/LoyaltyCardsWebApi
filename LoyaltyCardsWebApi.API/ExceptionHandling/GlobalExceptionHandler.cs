@@ -1,9 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using LoyaltyCardsWebApi.API.Common;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LoyaltyCardsWebApi.API.ExceptionHandling

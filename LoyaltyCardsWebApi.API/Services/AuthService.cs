@@ -159,7 +159,7 @@ public class AuthService : IAuthService
 
         if (tokenExpiryDateTime < DateTime.UtcNow)
         {
-            return Result<string>.Unauthorized("Token expiry date not found");
+            return Result<string>.Unauthorized("Token has expired");
         }
 
         var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId);

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Castle.Core.Logging;
 using LoyaltyCardsWebApi.API.ExceptionHandling;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
