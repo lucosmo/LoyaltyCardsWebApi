@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using DotNetEnv;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,6 +8,8 @@ using LoyaltyCardsWebApi.API.Middleware;
 using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.ExceptionHandling;
 using LoyaltyCardsWebApi.API.Data;
+using System.Text.Json;
+
 
 DotNetEnv.Env.Load();
 var builder = WebApplication.CreateBuilder(args);
@@ -17,7 +17,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var jwtSettings = builder.Configuration.GetSection("JWTSettings");
 var secretKey = jwtSettings["JWT_Secret"];
 
-if(string.IsNullOrEmpty(secretKey))
+if (string.IsNullOrEmpty(secretKey))
 {
     throw new InvalidOperationException("Key for JWT authentication is not configured or is empty");
 }
@@ -40,6 +40,30 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = jwtSettings["JWT_Issuer"],
         ValidAudience = jwtSettings["JWT_Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            var statusCode = StatusCodes.Status401Unauthorized;
+            var details = !string.IsNullOrEmpty(context.Error)
+                ? context.Error : !string.IsNullOrEmpty(context.ErrorDescription)
+                    ? context.ErrorDescription : "Authentication failed.";
+            var title = "Unauthorized.";
+            
+            var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
+                    context.HttpContext,
+                    title,
+                    statusCode,
+                    details
+                );
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/problem+json";
+            var json = JsonSerializer.Serialize(problemDetails);
+            await context.Response.WriteAsync(json, Encoding.UTF8);
+        }
     };
 });
 builder.Services.AddAuthorization();
@@ -66,7 +90,6 @@ builder.Logging.AddConsole();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -76,37 +99,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseMiddleware<TokenRevocationMiddleware>();
 app.UseExceptionHandler();
-
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<TokenRevocationMiddleware>();
 app.MapControllers();
-/*
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-*/
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

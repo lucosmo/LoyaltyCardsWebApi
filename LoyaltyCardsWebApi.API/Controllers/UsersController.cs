@@ -1,6 +1,5 @@
+using LoyaltyCardsWebApi.API.Controllers.Results;
 using LoyaltyCardsWebApi.API.Data.DTOs;
-using LoyaltyCardsWebApi.API.Models;
-using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,12 +24,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto newUser)
     {
         var result = await _userService.CreateUserAsync(newUser);
-        if (!result.Success)
-        {
-            return BadRequest(result.Value);
-        }
-
-        return Ok(result.Value);
+        return new ApiResult<UserDto>(result);
     }
 
     [Authorize]
@@ -38,11 +32,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetAllUsers()
     {
         var users = await _userService.GetAllUsersAsync();
-        if (!users.Success)
-        {
-            return NotFound();
-        }
-        return Ok(users);
+        return new ApiResult<List<UserDto>>(users);
     }
 
     [Authorize]
@@ -51,11 +41,7 @@ public class UsersController : ControllerBase
     {
         var currentUserId = _currentUserService.UserId;
         var user = await _userService.GetUserByIdAsync(currentUserId);
-        if (!user.Success)
-        {
-            return Unauthorized();
-        }
-        return Ok(user);
+        return new ApiResult<UserDto>(user);
     }
 
     [Authorize]
@@ -68,11 +54,7 @@ public class UsersController : ControllerBase
             return Unauthorized("No permission to perform action.");
         }
         var user = await _userService.GetUserByIdAsync(id, currentUserId.Value);
-        if (!user.Success)
-        {
-            return NotFound();
-        }
-        return Ok(user);
+        return new ApiResult<UserDto>(user);
     }
 
     // GET /api/users/{id}/cards
@@ -86,11 +68,7 @@ public class UsersController : ControllerBase
             return Unauthorized("No permission to perform action.");
         }
         var cards = await _cardService.GetCardsByUserIdAsync(id, currentUserId);
-        if (!cards.Success)
-        {
-            return NotFound();
-        }
-        return Ok(cards);
+        return new ApiResult<IEnumerable<CardDto>>(cards);
     }
 
     [Authorize]
@@ -103,11 +81,7 @@ public class UsersController : ControllerBase
             return Unauthorized("No permission to perform action.");
         }
         var user = await _userService.DeleteAsync(id, currentUserId.Value);
-        if (!user.Success)
-        {
-            return NotFound();
-        }
-        return Ok(user);
+        return new ApiResult<UserDto>(user);
     }
 
     [Authorize]
@@ -120,11 +94,7 @@ public class UsersController : ControllerBase
             return Unauthorized("No permission to perform action.");
         }
         var isUserUpdated = await _userService.UpdateUserAsync(id, updatedUser, currentUserId.Value);
-        if (!isUserUpdated.Success)
-        {
-            return NotFound();
-        }
-        return Ok(updatedUser);
+        return new ApiResult<bool>(isUserUpdated);
     }
 }
 

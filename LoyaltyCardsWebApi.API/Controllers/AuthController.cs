@@ -1,3 +1,5 @@
+using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.Controllers.Results;
 using LoyaltyCardsWebApi.API.Data;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Services;
@@ -7,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace LoyaltyCardsWebApi.API.Controllers;
 
 [Route("api/[controller]")]
+[ApiController]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -22,18 +25,8 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(InvalidCredentialsMessage);
-        }
-
         var tokenResult = await _authService.LoginAsync(loginDto);
-        if (!tokenResult.Success)
-        {
-            return Unauthorized(tokenResult.Error);
-        }
-        
-        return Ok(new {Token = tokenResult});  
+        return new ApiResult<string>(tokenResult);  
     }
 
     [Authorize]
@@ -43,48 +36,33 @@ public class AuthController : ControllerBase
         var tokenResult = _authService.GetTokenAuthHeader();
         if (!tokenResult.Success || string.IsNullOrEmpty(tokenResult.Value))
         {
-            return Unauthorized(tokenResult.Error);
+            return new ApiResult<string>(tokenResult);
         }
 
         var userIdResult = _authService.GetUserId();
         if (!userIdResult.Success)
         {
-            return Unauthorized(userIdResult.Error);
+            return new ApiResult<int>(userIdResult);
         }
 
-        var expiryDateResult = _authService.GetTokenExpiryDate();
-        if (!expiryDateResult.Success)
-        {
-            return Unauthorized(expiryDateResult.Error);
-        }
-        var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, expiryDateResult.Value, userIdResult.Value);
+        var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, userIdResult.Value);
         if (!revokeResult.Success)
         {
-            return StatusCode(500, new { message = "Internal Server Error", error = revokeResult.Error });
+            return new ApiResult<string>(revokeResult);
         }
-
-        return Ok(new {Message = "Successfully logged out"});
+        
+        return new ApiResult<object?>(Result<object?>.NoContent());
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] CreateUserDto newUserDto)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest("Invalid registration data.");
-        }
-
         var result = await _authService.RegisterAsync(newUserDto);
-        if (!result.Success)
+        var location = Url.Action(nameof(UsersController.GetUserById), "Users", new { id = result.Value?.Id });
+        if (result.Success && result.Value is not null && location is not null)
         {
-            return BadRequest(result.Error);
+            return new ApiResult<UserDto>(Result<UserDto>.Created(result.Value, location));    
         }
-
-        return CreatedAtAction(
-            actionName: "GetUserById",
-            controllerName: "Users",
-            routeValues: new { id = result.Value?.Id },
-            value: result.Value
-        );              
+        return new ApiResult<UserDto>(result);
     }
 }

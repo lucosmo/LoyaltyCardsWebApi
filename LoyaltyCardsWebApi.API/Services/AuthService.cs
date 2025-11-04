@@ -123,22 +123,21 @@ public class AuthService : IAuthService
         {
             return Result<string>.BadRequest("Token is empty.");
         }
-
         return Result<string>.Ok(token);
     }
 
-    public Result<DateTime> GetTokenExpiryDate()
+    public DateTime? GetTokenExpiryDate()
     {
         var expiryDateClaim = _requestContext.ExpiryTime;
         if (string.IsNullOrEmpty(expiryDateClaim) || !long.TryParse(expiryDateClaim, out var expiryDateSeconds))
         {
-            return Result<DateTime>.NotFound("Token expiry date not found");
+            return null;
         }
         var expiryDate = DateTimeOffset.FromUnixTimeSeconds(expiryDateSeconds).UtcDateTime;
-        return Result<DateTime>.Ok(expiryDate);
+        return expiryDate;
     }
 
-    public async Task<Result<string>> AddRevokedTokenAsync(string token, DateTime expiryDate, int userId)
+    public async Task<Result<string>> AddRevokedTokenAsync(string token, int userId)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -152,14 +151,24 @@ public class AuthService : IAuthService
         {
             return Result<string>.Forbidden("No permission.");
         }
+        var tokenExpiryDateTime = GetTokenExpiryDate();
+        if (tokenExpiryDateTime is null)
+        {
+            return Result<string>.NotFound("Token expiry date not found");
+        }
 
-        var revokedToken = await _authRepository.AddRevokedTokenAsync(token, expiryDate, userId);
+        if (tokenExpiryDateTime < DateTime.UtcNow)
+        {
+            return Result<string>.Unauthorized("Token has expired");
+        }
+
+        var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId);
         if (revokedToken is null)
         {
             return Result<string>.Fail("Failed to revoke token.");
         }
-        
-        return Result<string>.Ok(revokedToken.Token);        
+              
+        return Result<string>.Ok("Token successfully revoked");
     }
 
     public async Task<bool> IsTokenRevokedAsync(string token)
