@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using LoyaltyCardsWebApi.API.Common;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Diagnostics;
@@ -22,9 +24,11 @@ namespace LoyaltyCardsWebApi.API.ExceptionHandling
             var problemDetails = ProblemDetailsHelper.CreateProblemDetails(context, title, status, details);
 
             context.Response.StatusCode = problemDetails.Status ?? 500;
-            context.Response.ContentType = "application/problem+json";
+            context.Response.ContentType = "application/problem+json; charset=utf-8";
 
-            await context.Response.WriteAsJsonAsync(problemDetails, ct);
+            var json = JsonSerializer.Serialize(problemDetails);
+            
+            await context.Response.WriteAsync(json, Encoding.UTF8, ct);
 
             return true;
         }
