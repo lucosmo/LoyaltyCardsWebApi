@@ -46,7 +46,7 @@ namespace LoyaltyCardsWebApi.API.Controllers
             var cardResult = await _cardService.CreateCardAsync(newCard, userId);
             var location = Url.Action(nameof(Get), new { id = cardResult.Value?.Id });
 
-            if(cardResult.Success && cardResult.Value is not null && location is not null)
+            if (cardResult.Success && cardResult.Value is not null && location is not null)
             {
                 return new ApiResult<CardDto>(Result<CardDto>.Created(cardResult.Value, location));    
             }

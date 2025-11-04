@@ -40,7 +40,7 @@ public class JwtService : IJwtService
 
     private void VerifyTokenParameters(string? userId, string? userEmail)
     {
-        if(IsInvalidSecretKey(_jwtSettings.SecretKey))
+        if (IsInvalidSecretKey(_jwtSettings.SecretKey))
         {
             throw new ArgumentException("Key for JWT authentication is not configured, is empty or not long enough.");
         }
@@ -48,11 +48,11 @@ public class JwtService : IJwtService
         {
             throw new ArgumentException("Wrong expiration time set for token.");
         }
-        if(IsInvalidUserId(userId))
+        if (IsInvalidUserId(userId))
         {
             throw new ArgumentException("Can't generate token without valid user ID.");
         }
-        if(IsInvalidEmail(userEmail))
+        if (IsInvalidEmail(userEmail))
         {
             throw new ArgumentException("Can't generate token without valid email.");
         }

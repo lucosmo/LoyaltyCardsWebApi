@@ -50,7 +50,7 @@ public class JwtServiceTest
 
     private void CreateJwtService()
     {
-        if(_configuration == null)
+        if (_configuration == null)
         {
             throw new ArgumentException("_configuration is not initialized.");
         }

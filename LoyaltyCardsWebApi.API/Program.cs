@@ -17,7 +17,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 var jwtSettings = builder.Configuration.GetSection("JWTSettings");
 var secretKey = jwtSettings["JWT_Secret"];
 
-if(string.IsNullOrEmpty(secretKey))
+if (string.IsNullOrEmpty(secretKey))
 {
     throw new InvalidOperationException("Key for JWT authentication is not configured or is empty");
 }

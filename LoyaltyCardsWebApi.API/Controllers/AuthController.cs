@@ -59,7 +59,7 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.RegisterAsync(newUserDto);
         var location = Url.Action(nameof(UsersController.GetUserById), "Users", new { id = result.Value?.Id });
-        if(result.Success && result.Value is not null && location is not null)
+        if (result.Success && result.Value is not null && location is not null)
         {
             return new ApiResult<UserDto>(Result<UserDto>.Created(result.Value, location));    
         }

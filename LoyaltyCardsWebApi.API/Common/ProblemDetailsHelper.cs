@@ -38,7 +38,7 @@ public static class ProblemDetailsHelper
 
     private static (string, string, string) PrepareMissingValues(HttpContext httpContext)
     {
-        var instance = $"{httpContext.Request.Method} {httpContext.Request.Path}" ?? string.Empty;
+        var instance = $"{httpContext.Request.Method} {httpContext.Request.Path}";
         var requestId = httpContext.TraceIdentifier ?? string.Empty;
         Activity? activity = httpContext.Features.Get<IHttpActivityFeature>()?.Activity ?? Activity.Current;
         var traceId = activity?.TraceId.ToString() ?? string.Empty;
