@@ -9,6 +9,8 @@ using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.ExceptionHandling;
 using LoyaltyCardsWebApi.API.Data;
 using System.Text.Json;
+using Microsoft.AspNetCore.Identity;
+using LoyaltyCardsWebApi.API.Models;
 
 
 DotNetEnv.Env.Load();
@@ -84,6 +86,7 @@ builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
