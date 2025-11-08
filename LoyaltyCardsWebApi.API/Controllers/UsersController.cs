@@ -1,3 +1,4 @@
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Controllers.Results;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Services;
@@ -20,6 +21,7 @@ public class UsersController : ControllerBase
         _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpPost]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserDto newUser)
     {

@@ -6,6 +6,7 @@ using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
+using Microsoft.AspNetCore.Identity;
 
 namespace LoyaltyCardsWebApi.API.Services;
 
@@ -16,19 +17,22 @@ public class AuthService : IAuthService
     private readonly IAuthRepository _authRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IJwtService _jwtService;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
     public AuthService(
         IRequestContext requestContext,
         IAuthRepository authRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUserService,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IPasswordHasher<User> passwordHasher)
     {
         _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
         _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
     public async Task<Result<string>> LoginAsync(LoginDto loginDto)
     {
@@ -45,13 +49,18 @@ public class AuthService : IAuthService
             return Result<string>.BadRequest("Password is required.");
         }
         var user = await _userRepository.GetUserByEmailAsync(loginDto.Email);
-        
-        if (user==null || user.Password != loginDto.Password)
+
+        if (user == null)
         {
-            return Result<string>.Unauthorized("Invalid credentials.");
+            return Result<string>.NotFound("User not found");
+        }
+        var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
+        if (verifiedHashedPassword == PasswordVerificationResult.Failed)
+        {
+            return Result<string>.Unauthorized("Ivalid credentials");
         }
         
-        var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email);
+        var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString());
         if (string.IsNullOrEmpty(token))
         {
             return Result<string>.Fail("Token generation failed");
@@ -88,9 +97,11 @@ public class AuthService : IAuthService
         {
             UserName = newUserDto.UserName,
             Email = newUserDto.Email,
-            Password = newUserDto.Password,
-            AccountCreatedDate = DateTime.UtcNow  
+            AccountCreatedDate = DateTime.UtcNow,
+            Role = UserRole.User
         };
+        newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUserDto.Password);
+
         var createdUser = await _userRepository.CreateAsync(newUserModel);
         if (createdUser is null)
         {

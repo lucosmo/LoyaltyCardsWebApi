@@ -29,7 +29,7 @@ public class TokenRevocationMiddleware
                 var problemDetails = ProblemDetailsHelper.CreateProblemDetails(context, title, statusCode, details);
                 var json = JsonSerializer.Serialize(problemDetails);
                 context.Response.StatusCode = statusCode;
-                context.Response.ContentType = "application/problem+json";
+                context.Response.ContentType = "application/problem+json; charset=utf-8";
                 await context.Response.WriteAsync(json, Encoding.UTF8);
                 return;
             }
