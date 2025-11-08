@@ -49,20 +49,55 @@ builder.Services.AddAuthentication(options =>
         OnChallenge = async context =>
         {
             context.HandleResponse();
+            
+            if (context.Response.HasStarted)
+            {
+                return;
+            }
+                            
             var statusCode = StatusCodes.Status401Unauthorized;
             var details = !string.IsNullOrEmpty(context.Error)
                 ? context.Error : !string.IsNullOrEmpty(context.ErrorDescription)
                     ? context.ErrorDescription : "Authentication failed.";
             var title = "Unauthorized.";
-            
+
             var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
                     context.HttpContext,
                     title,
                     statusCode,
                     details
                 );
+            context.Response.Clear();
             context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/problem+json";
+            context.Response.ContentType = "application/problem+json; charset=utf-8";
+            var json = JsonSerializer.Serialize(problemDetails);
+            await context.Response.WriteAsync(json, Encoding.UTF8);
+        },
+        OnForbidden = async context =>
+        {
+            if (context.Response.HasStarted)
+            {
+                return;
+            }
+
+            var statusCode = StatusCodes.Status403Forbidden;
+            var user = context.HttpContext.User;
+            var path = context.HttpContext.Request.Path;
+            var method = context.HttpContext.Request.Method;
+            var details = user.Identity?.IsAuthenticated == true
+                ? $"Access to {method} {path} is forbidden."
+                : $"Access forbidden";
+            var title = "Access forbidden.";
+
+            var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
+                    context.HttpContext,
+                    title,
+                    statusCode,
+                    details
+                );
+            context.Response.Clear();
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/problem+json; charset=utf-8";
             var json = JsonSerializer.Serialize(problemDetails);
             await context.Response.WriteAsync(json, Encoding.UTF8);
         }
@@ -91,7 +126,12 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = (context) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+    }
+);
 
 var app = builder.Build();
 
