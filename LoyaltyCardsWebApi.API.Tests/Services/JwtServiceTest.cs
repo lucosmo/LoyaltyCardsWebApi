@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -13,8 +14,9 @@ public class JwtServiceTest
     private Mock<IConfiguration>? _configuration;
     private JwtService? _jwtService;
     private TokenValidationParameters? _validationParameters;
-    private string _userId = "123"; 
+    private string _userId = "123";
     private string _userEmail = "user123@test.com";
+    private string _userRole = nameof(UserRole.User);
 
     [SetUp]
     public void SetUp()
@@ -63,7 +65,7 @@ public class JwtServiceTest
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
         CreateJwtService();
         
-        var token = _jwtService?.GenerateToken(_userId, _userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail, _userRole);
         
         Assert.IsNotNull(token);
         Assert.IsNotEmpty(token);
@@ -79,7 +81,7 @@ public class JwtServiceTest
         bool isTokenValid = false;
         var tokenHandler = new JwtSecurityTokenHandler();
 
-        var token = _jwtService?.GenerateToken(_userId, _userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail, _userRole);
         
         try
         {
@@ -100,7 +102,7 @@ public class JwtServiceTest
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
         CreateJwtService();
 
-        var token = _jwtService?.GenerateToken(_userId, _userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail, _userRole);
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwtToken = tokenHandler.ReadToken(token) as JwtSecurityToken;
 
@@ -116,7 +118,7 @@ public class JwtServiceTest
 
         var expirationMinutes = 2;
 
-        var token = _jwtService?.GenerateToken(_userId, _userEmail);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail,_userRole);
         var expectedExpirationTime = DateTime.UtcNow.AddMinutes(expirationMinutes);
         var timeTolerance = TimeSpan.FromSeconds(5);
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -133,7 +135,7 @@ public class JwtServiceTest
 
         var exeptionMessage = "Key for JWT authentication is not configured, is empty or not long enough.";
 
-        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(_userId, _userEmail));
+        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(_userId, _userEmail, _userRole));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
     }
 
@@ -147,7 +149,7 @@ public class JwtServiceTest
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
         CreateJwtService();
 
-        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(userId, userEmail));
+        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(userId, userEmail, _userRole));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
     }
 
@@ -160,7 +162,7 @@ public class JwtServiceTest
         SetupJwtSettings("SecretKey123456SecretKey123456ab", "TestIssuer", "TestAudience", "2");
         CreateJwtService();
 
-        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(userId, userEmail));
+        ArgumentException? testEx = Assert.Throws<ArgumentException>(() => _jwtService?.GenerateToken(userId, userEmail, _userRole));
         Assert.That(testEx?.Message, Is.EqualTo(exeptionMessage));
     }
 
