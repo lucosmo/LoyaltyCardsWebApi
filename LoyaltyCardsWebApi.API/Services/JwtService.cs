@@ -16,11 +16,11 @@ public class JwtService : IJwtService
         _jwtSettings = GetJwtSettings(configuration);
     }
 
-    public string GenerateToken(string userId, string userEmail)
+    public string GenerateToken(string userId, string userEmail, string userRole)
     {
         VerifyTokenParameters(userId, userEmail);
         var credentials = CreateSigningCredentials(_jwtSettings.SecretKey);
-        var claims = CreateClaims(userId, userEmail);
+        var claims = CreateClaims(userId, userEmail, userRole);
 
         var jwtToken = CreateJwtToken(claims, _jwtSettings, credentials);
         
@@ -84,7 +84,7 @@ public class JwtService : IJwtService
         return new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
     }
 
-    private IEnumerable<Claim> CreateClaims(string userId, string userEmail)
+    private IEnumerable<Claim> CreateClaims(string userId, string userEmail, string userRole)
     {
         return new List<Claim>
         {
@@ -92,7 +92,8 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Email, userEmail),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.NameIdentifier, userId),
-            new Claim(ClaimTypes.Email, userEmail)
+            new Claim(ClaimTypes.Email, userEmail),
+            new Claim(ClaimTypes.Role, userRole)
         };
     }
 

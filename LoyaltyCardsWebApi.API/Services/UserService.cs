@@ -3,15 +3,18 @@ using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Common;
+using Microsoft.AspNetCore.Identity;
 
 namespace LoyaltyCardsWebApi.API.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
-    public UserService(IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, IPasswordHasher<User> passwordHasher)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
     {
@@ -19,13 +22,21 @@ public class UserService : IUserService
         {
             return Result<UserDto>.BadRequest("User data is required to create a new User.");
         }
+        var existingUser = await _userRepository.GetUserByEmailAsync(newUser.Email);
+        if (existingUser != null)
+        {
+            return Result<UserDto>.Conflict($"User with this email: {newUser.Email} already exists.");
+        }
         var newUserModel = new User
         {
             UserName = newUser.UserName,
             Email = newUser.Email,
-            Password = newUser.Password,
-            AccountCreatedDate = DateTime.UtcNow  
+            AccountCreatedDate = DateTime.UtcNow,
+            Role = UserRole.User,
+            PasswordHash = string.Empty
         };
+        newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUser.Password);
+
         var createdUser = await _userRepository.CreateAsync(newUserModel);
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
@@ -123,21 +134,36 @@ public class UserService : IUserService
         }
 
         if (updatedUser is null)
-            {
-                return Result<bool>.BadRequest("User data is required.");
-            }
+        {
+            return Result<bool>.BadRequest("User data is required.");
+        }
         var existingUser = await _userRepository.GetUserByIdAsync(userId); 
         if (existingUser is null)
         {
             return Result<bool>.NotFound("User not found.");
-        }     
+        }
         if (updatedUser.Email != null && updatedUser.Email != existingUser.Email)
         {
             existingUser.Email = updatedUser.Email;
         }
-        if (updatedUser.Password != null && updatedUser.Password != existingUser.Password)
+        if (!string.IsNullOrEmpty(existingUser.PasswordHash) && !string.IsNullOrEmpty(updatedUser.NewPassword))
         {
-            existingUser.Password = updatedUser.Password;
+            var verifiedHashedCurrentPassword = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, updatedUser.CurrentPassword);
+            if (verifiedHashedCurrentPassword == PasswordVerificationResult.Success || verifiedHashedCurrentPassword == PasswordVerificationResult.SuccessRehashNeeded)
+            {
+                if (string.Equals(updatedUser.NewPassword, updatedUser.CurrentPassword, StringComparison.Ordinal))
+                {
+                    return Result<bool>.BadRequest("New password must be different from the current password.");
+                }
+                else
+                {
+                    existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, updatedUser.NewPassword);
+                }
+            }
+            else
+            {
+                return Result<bool>.BadRequest("Invalid credentials.");
+            }
         }
 
         var isUserUpdated = await _userRepository.UpdateAsync(existingUser);

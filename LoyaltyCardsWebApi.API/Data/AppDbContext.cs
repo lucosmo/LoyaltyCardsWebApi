@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using LoyaltyCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Common;
 
 public class AppDbContext : DbContext
 {
@@ -17,6 +18,13 @@ public class AppDbContext : DbContext
         {
             c.HasIndex(card => new { card.Barcode, card.UserId })
              .IsUnique();
+        });
+
+        modelBuilder.Entity<User>(c =>
+        {
+            c.Property(u => u.PasswordHash).IsRequired();
+            c.Property(u => u.Role)
+             .HasDefaultValue(UserRole.User);
         });
     }
 }
