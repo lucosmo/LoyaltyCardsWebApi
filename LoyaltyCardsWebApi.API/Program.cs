@@ -126,12 +126,7 @@ builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
-builder.Services.AddProblemDetails(options =>
-    options.CustomizeProblemDetails = (context) =>
-    {
-        context.HttpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
-    }
-);
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 

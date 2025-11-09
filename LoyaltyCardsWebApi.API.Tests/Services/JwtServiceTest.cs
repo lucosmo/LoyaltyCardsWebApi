@@ -14,9 +14,9 @@ public class JwtServiceTest
     private Mock<IConfiguration>? _configuration;
     private JwtService? _jwtService;
     private TokenValidationParameters? _validationParameters;
-    private string _userId = "123";
-    private string _userEmail = "user123@test.com";
-    private string _userRole = nameof(UserRole.User);
+    private readonly string _userId = "123";
+    private readonly string _userEmail = "user123@test.com";
+    private readonly string _userRole = nameof(UserRole.User);
 
     [SetUp]
     public void SetUp()

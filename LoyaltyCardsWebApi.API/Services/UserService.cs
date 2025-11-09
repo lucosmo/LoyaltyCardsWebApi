@@ -145,10 +145,13 @@ public class UserService : IUserService
         {
             existingUser.Email = updatedUser.Email;
         }
-        var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, updatedUser.Password);
-        if (updatedUser.Password != null && verifiedHashedPassword == PasswordVerificationResult.Failed)
+        if (!string.IsNullOrEmpty(existingUser.PasswordHash) && updatedUser.Password != null)
         {
-            existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, updatedUser.Password);
+            var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, updatedUser.Password);
+            if (verifiedHashedPassword == PasswordVerificationResult.Failed)
+            {
+                existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, updatedUser.Password);    
+            }
         }
 
         var isUserUpdated = await _userRepository.UpdateAsync(existingUser);

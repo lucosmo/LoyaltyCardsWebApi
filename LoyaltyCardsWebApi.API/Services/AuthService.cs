@@ -1,5 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data;
 using LoyaltyCardsWebApi.API.Data.DTOs;
@@ -52,18 +50,18 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            return Result<string>.NotFound("User not found");
+            return Result<string>.NotFound("User not found.");
         }
         var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
         if (verifiedHashedPassword == PasswordVerificationResult.Failed)
         {
-            return Result<string>.Unauthorized("Ivalid credentials");
+            return Result<string>.Unauthorized("Invalid credentials.");
         }
         
         var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString());
         if (string.IsNullOrEmpty(token))
         {
-            return Result<string>.Fail("Token generation failed");
+            return Result<string>.Fail("Token generation failed.");
         }
         return Result<string>.Ok(token);
     }
@@ -90,7 +88,7 @@ public class AuthService : IAuthService
         var existingUser = await _userRepository.GetUserByEmailAsync(newUserDto.Email);
         if (existingUser != null)
         {
-            return Result<UserDto>.Conflict($"User with this email: {newUserDto.Email} already exists");
+            return Result<UserDto>.Conflict($"User with this email: {newUserDto.Email} already exists.");
         }
 
         var newUserModel = new User
@@ -105,7 +103,7 @@ public class AuthService : IAuthService
         var createdUser = await _userRepository.CreateAsync(newUserModel);
         if (createdUser is null)
         {
-            return Result<UserDto>.Fail($"Registration failed for this email: {newUserDto.Email}");
+            return Result<UserDto>.Fail($"Registration failed for this email: {newUserDto.Email}.");
         }
 
         var userDto = createdUser.ToDto();
@@ -117,7 +115,7 @@ public class AuthService : IAuthService
         var userId = _currentUserService.UserId;
         if (userId is null)
         {
-            return Result<int>.Unauthorized("User ID not found in token");
+            return Result<int>.Unauthorized("User ID not found in token.");
         }
         return Result<int>.Ok(userId.Value);
     }
@@ -126,7 +124,7 @@ public class AuthService : IAuthService
         var authHeader = _requestContext.Authorization;
         if (authHeader is null || authHeader.StartsWith("Bearer ") == false)
         {
-            return Result<string>.Unauthorized("Token not found in Authorization header");
+            return Result<string>.Unauthorized("Token not found in Authorization header.");
         }
         var token = authHeader.Substring("Bearer ".Length).Trim();
 
@@ -165,12 +163,12 @@ public class AuthService : IAuthService
         var tokenExpiryDateTime = GetTokenExpiryDate();
         if (tokenExpiryDateTime is null)
         {
-            return Result<string>.NotFound("Token expiry date not found");
+            return Result<string>.NotFound("Token expiry date not found.");
         }
 
         if (tokenExpiryDateTime < DateTime.UtcNow)
         {
-            return Result<string>.Unauthorized("Token has expired");
+            return Result<string>.Unauthorized("Token has expired.");
         }
 
         var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId);
@@ -179,7 +177,7 @@ public class AuthService : IAuthService
             return Result<string>.Fail("Failed to revoke token.");
         }
               
-        return Result<string>.Ok("Token successfully revoked");
+        return Result<string>.Ok("Token successfully revoked.");
     }
 
     public async Task<bool> IsTokenRevokedAsync(string token)
