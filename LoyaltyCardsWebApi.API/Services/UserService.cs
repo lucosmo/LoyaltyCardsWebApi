@@ -25,14 +25,15 @@ public class UserService : IUserService
         var existingUser = await _userRepository.GetUserByEmailAsync(newUser.Email);
         if (existingUser != null)
         {
-            return Result<UserDto>.Conflict($"User with this email: {newUser.Email} already exists");
+            return Result<UserDto>.Conflict($"User with this email: {newUser.Email} already exists.");
         }
         var newUserModel = new User
         {
             UserName = newUser.UserName,
             Email = newUser.Email,
             AccountCreatedDate = DateTime.UtcNow,
-            Role = UserRole.User
+            Role = UserRole.User,
+            PasswordHash = string.Empty
         };
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUser.Password);
 
@@ -133,9 +134,9 @@ public class UserService : IUserService
         }
 
         if (updatedUser is null)
-            {
-                return Result<bool>.BadRequest("User data is required.");
-            }
+        {
+            return Result<bool>.BadRequest("User data is required.");
+        }
         var existingUser = await _userRepository.GetUserByIdAsync(userId); 
         if (existingUser is null)
         {
@@ -145,12 +146,23 @@ public class UserService : IUserService
         {
             existingUser.Email = updatedUser.Email;
         }
-        if (!string.IsNullOrEmpty(existingUser.PasswordHash) && updatedUser.Password != null)
+        if (!string.IsNullOrEmpty(existingUser.PasswordHash) && !string.IsNullOrEmpty(updatedUser.NewPassword))
         {
-            var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, updatedUser.Password);
-            if (verifiedHashedPassword == PasswordVerificationResult.Failed)
+            var verifiedHashedCurrentPassword = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, updatedUser.CurrentPassword);
+            if (verifiedHashedCurrentPassword == PasswordVerificationResult.Success || verifiedHashedCurrentPassword == PasswordVerificationResult.SuccessRehashNeeded)
             {
-                existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, updatedUser.Password);    
+                if (string.Equals(updatedUser.NewPassword, updatedUser.CurrentPassword, StringComparison.Ordinal))
+                {
+                    return Result<bool>.BadRequest("New password must be different from the current password.");
+                }
+                else
+                {
+                    existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, updatedUser.NewPassword);
+                }
+            }
+            else
+            {
+                return Result<bool>.BadRequest("Invalid credentials.");
             }
         }
 

@@ -4,10 +4,10 @@ using LoyaltyCardsWebApi.API.Attributes;
 namespace LoyaltyCardsWebApi.API.Data.DTOs;
 public class CreateUserDto
 {
-        [ValidateNotEmptyIfProvided]
-        public required string UserName { get; set; }
-        [EmailAddress(ErrorMessage = "Invalid email address format")]
-        public required string Email { get; set; }
-        [ValidatePasswordRules]
-        public required string Password { get; set; }
-    }
+    [ValidateNotEmptyIfProvided]
+    public required string UserName { get; set; }
+    [EmailAddress(ErrorMessage = "Invalid email address format")]
+    public required string Email { get; set; }
+    [ValidatePasswordRules]
+    public required string Password { get; set; }
+}

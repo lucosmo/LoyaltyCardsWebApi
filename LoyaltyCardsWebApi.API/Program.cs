@@ -86,7 +86,7 @@ builder.Services.AddAuthentication(options =>
             var method = context.HttpContext.Request.Method;
             var details = user.Identity?.IsAuthenticated == true
                 ? $"Access to {method} {path} is forbidden."
-                : $"Access forbidden";
+                : $"Access forbidden.";
             var title = "Access forbidden.";
 
             var problemDetails = ProblemDetailsHelper.CreateProblemDetails(

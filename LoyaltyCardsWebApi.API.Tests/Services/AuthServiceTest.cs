@@ -40,8 +40,14 @@ public class AuthServiceTest
     [Test]
     public async Task LoginAsync_ProperInput_ReturnsToken()
     {
-        var loginDto = new LoginDto { Email = "test@test.test", Password = "Test" };
-        var user = new User{ Id = 1, UserName = "userTest", Email = "test@test.test", PasswordHash = "AQAAAAIAAYagAAAAEJ3si0ANLV1OsUkrskIMhzcB5IiEY0Ve9LoRU2moOxkAZuvEfBknhZjRjIVV828FVA==" ,Role = 0};
+        var passwordHashDefault = string.Empty;
+        var email = "test@test.test";
+        var correctPassword = "Test";
+        var userName = "userTest";
+        var userId = 1;
+        var loginDto = new LoginDto{ Email = email, Password = correctPassword };
+        var user = new User { Id = userId, UserName = userName, Email = email, PasswordHash = passwordHashDefault, Role = 0 };
+        user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
         var token = "thisIsTestToken";
         
         _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync(user);
@@ -56,15 +62,22 @@ public class AuthServiceTest
     [Test]
     public async Task LoginAsync_WrongCredentials_ReturnsEmpty()
     {
-        var loginDto = new LoginDto{ Email = "test@test.test", Password = "WrongTest" };
-        var user = new User{ Id = 1, UserName = "userTest", Email = "test@test.test", PasswordHash = "AQAAAAIAAYagAAAAEJ3si0ANLV1OsUkrskIMhzcB5IiEY0Ve9LoRU2moOxkAZuvEfBknhZjRjIVV828FVA==", Role = 0};
+        var passwordHashDefault = string.Empty;
+        var email = "test@test.test";
+        var correctPassword = "Test";
+        var incorrectPassword = "WrongPassword";
+        var userName = "userTest";
+        var userId = 1;
+        var loginDto = new LoginDto{ Email = email, Password = incorrectPassword };
+        var user = new User { Id = userId, UserName = userName, Email = email, PasswordHash = passwordHashDefault, Role = 0 };
+        user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
         
         _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync(user);
              
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.That(result.Success, Is.False);
-        Assert.That(result.Error, Is.EqualTo("Ivalid credentials"));
+        Assert.That(result.Error, Is.EqualTo("Invalid credentials."));
     }
 
     [Test]
@@ -77,15 +90,21 @@ public class AuthServiceTest
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.That(result.Success, Is.False);
-        Assert.That(result.Error, Is.EqualTo("User not found"));
+        Assert.That(result.Error, Is.EqualTo("Invalid credentials."));
     }
 
     [Test]
     public async Task LoginAsync_ServicesCalledOnce_TestPass()
     {
         // Arrange
-        var loginDto = new LoginDto{ Email = "test@test.test", Password = "Test" };
-        var user = new User{ Id = 1, UserName = "userTest", Email = "test@test.test", PasswordHash = "AQAAAAIAAYagAAAAEJ3si0ANLV1OsUkrskIMhzcB5IiEY0Ve9LoRU2moOxkAZuvEfBknhZjRjIVV828FVA==", Role = 0};
+        var passwordHashDefault = string.Empty;
+        var email = "test@test.test";
+        var correctPassword = "Test";
+        var userName = "userTest";
+        var userId = 1;
+        var loginDto = new LoginDto{ Email = email, Password = correctPassword };
+        var user = new User { Id = userId, UserName = userName, Email = email, PasswordHash = passwordHashDefault, Role = 0 };
+        user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
         var token = "thisIsTestToken";
         
         _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync(user);

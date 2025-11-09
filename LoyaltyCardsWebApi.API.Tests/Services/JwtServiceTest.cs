@@ -118,7 +118,7 @@ public class JwtServiceTest
 
         var expirationMinutes = 2;
 
-        var token = _jwtService?.GenerateToken(_userId, _userEmail,_userRole);
+        var token = _jwtService?.GenerateToken(_userId, _userEmail, _userRole);
         var expectedExpirationTime = DateTime.UtcNow.AddMinutes(expirationMinutes);
         var timeTolerance = TimeSpan.FromSeconds(5);
         var tokenHandler = new JwtSecurityTokenHandler();

@@ -50,7 +50,7 @@ public class AuthService : IAuthService
 
         if (user == null)
         {
-            return Result<string>.NotFound("User not found.");
+            return Result<string>.Unauthorized("Invalid credentials.");
         }
         var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
         if (verifiedHashedPassword == PasswordVerificationResult.Failed)
@@ -90,13 +90,14 @@ public class AuthService : IAuthService
         {
             return Result<UserDto>.Conflict($"User with this email: {newUserDto.Email} already exists.");
         }
-
+        
         var newUserModel = new User
         {
             UserName = newUserDto.UserName,
             Email = newUserDto.Email,
             AccountCreatedDate = DateTime.UtcNow,
-            Role = UserRole.User
+            Role = UserRole.User,
+            PasswordHash = string.Empty
         };
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUserDto.Password);
 

@@ -8,6 +8,7 @@ public class ValidatePasswordRules : ValidationAttribute
     {
         List<string> errors = [];
         int minPasswordLength = 12;
+        string specialChars = "!$#@&*%()_+=";
 
         if (value is not string password || string.IsNullOrWhiteSpace(password))
         {
@@ -30,7 +31,7 @@ public class ValidatePasswordRules : ValidationAttribute
         {
             errors.Add($"{validationContext.DisplayName} must contain at least 1 digit.");
         }
-        if (!password.Any(c => "[!$#@&*%()_+=]".Contains(c)))
+        if (!password.Any(c => specialChars.Contains(c)))
         {
             errors.Add($"{validationContext.DisplayName} must contain at least 1 special character: !,$,#,@,&,*,%,(,),_,+,= .");
         }

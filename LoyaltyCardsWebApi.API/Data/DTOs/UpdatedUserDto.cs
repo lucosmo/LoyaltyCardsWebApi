@@ -6,6 +6,7 @@ public class UpdatedUserDto
 {
     [EmailAddress(ErrorMessage = "Invalid email address format")]
     public required string Email { get; set; }
+    public required string CurrentPassword { get; set; }
     [ValidatePasswordRules]
-    public required string Password { get; set; }
+    public required string NewPassword { get; set; }
 }
