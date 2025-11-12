@@ -46,7 +46,7 @@ public class AuthService : IAuthService
         {
             return Result<string>.BadRequest("Password is required.");
         }
-        var user = await _userRepository.GetUserByEmailAsync(loginDto.Email);
+        var user = await _userRepository.GetUserByEmailAsync(loginDto.Email, cancellationToken);
 
         if (user == null)
         {
@@ -57,7 +57,7 @@ public class AuthService : IAuthService
         {
             return Result<string>.Unauthorized("Invalid credentials.");
         }
-        await Task.Delay(TimeSpan.FromSeconds(30));
+        
         var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString());
         if (string.IsNullOrEmpty(token))
         {

@@ -15,7 +15,7 @@ public class CardRepository : ICardRepository
 
     public async Task<Card?> CreateCardAsync(Card newCard, CancellationToken cancellationToken = default)
     {
-        var createdCard = await _appDbContext.Cards.AddAsync(newCard);
+        var createdCard = await _appDbContext.Cards.AddAsync(newCard, cancellationToken);
         await _appDbContext.SaveChangesAsync(cancellationToken);
         return createdCard.Entity;
     }
