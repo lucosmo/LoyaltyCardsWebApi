@@ -13,23 +13,23 @@ public class CardRepository : ICardRepository
         _appDbContext = appDbContext;
     }
 
-    public async Task<Card?> CreateCardAsync(Card newCard)
+    public async Task<Card?> CreateCardAsync(Card newCard, CancellationToken cancellationToken = default)
     {
         var createdCard = await _appDbContext.Cards.AddAsync(newCard);
-        await _appDbContext.SaveChangesAsync();
+        await _appDbContext.SaveChangesAsync(cancellationToken);
         return createdCard.Entity;
     }
 
-    public async Task<Card?> Delete(int id, int userId)
+    public async Task<Card?> Delete(int id, int userId, CancellationToken cancellationToken = default)
     {
         var cardToDelete = await _appDbContext.Cards
             .Where(c => c.Id == id && c.UserId == userId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (cardToDelete != null)
         {
             _appDbContext.Cards.Remove(cardToDelete);
-            await _appDbContext.SaveChangesAsync();
+            await _appDbContext.SaveChangesAsync(cancellationToken);
             return cardToDelete;
         }
         else
@@ -38,18 +38,18 @@ public class CardRepository : ICardRepository
         }
     }
 
-    public async Task<Card?> GetCardByIdAsync(int id, int userId)
+    public async Task<Card?> GetCardByIdAsync(int id, int userId, CancellationToken cancellationToken = default)
     {
         var card = await _appDbContext.Cards
-            .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
         return card;
     }
 
-    public async Task<Card?> UpdateCardAsync(Card updateCard, int userId)
+    public async Task<Card?> UpdateCardAsync(Card updateCard, int userId, CancellationToken cancellationToken = default)
     {
         var existingCard = await _appDbContext.Cards
             .Where(c => c.Id == updateCard.Id && c.UserId == userId)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (existingCard != null)
         {
@@ -57,7 +57,7 @@ public class CardRepository : ICardRepository
             existingCard.Image = updateCard.Image;
             existingCard.Barcode = updateCard.Barcode;
             _appDbContext.Cards.Update(existingCard);
-            await _appDbContext.SaveChangesAsync();
+            await _appDbContext.SaveChangesAsync(cancellationToken);
             return existingCard;
         }
         else
@@ -66,17 +66,17 @@ public class CardRepository : ICardRepository
         }
     }
 
-    public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int userId)
+    public async Task<IEnumerable<Card>> GetCardsByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var cards = await _appDbContext.Cards
             .Where(c => c.UserId == userId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
         return cards;
     }
 
-    public async Task<bool> ExistsCardByBarcodeAsync(string barcode, int userId)
+    public async Task<bool> ExistsCardByBarcodeAsync(string barcode, int userId, CancellationToken cancellationToken = default)
     {
         return await _appDbContext.Cards
-                    .AnyAsync(c => c.Barcode == barcode && c.UserId == userId);
+                    .AnyAsync(c => c.Barcode == barcode && c.UserId == userId, cancellationToken);
     }
 }

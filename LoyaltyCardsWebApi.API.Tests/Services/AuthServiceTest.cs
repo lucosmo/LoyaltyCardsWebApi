@@ -50,7 +50,7 @@ public class AuthServiceTest
         user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
         var token = "thisIsTestToken";
         
-        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync(user);
+        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _jwtService.Setup(x => x.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString())).Returns(token);
         
         var result = await _authService.LoginAsync(loginDto);
@@ -71,9 +71,9 @@ public class AuthServiceTest
         var loginDto = new LoginDto{ Email = email, Password = incorrectPassword };
         var user = new User { Id = userId, UserName = userName, Email = email, PasswordHash = passwordHashDefault, Role = 0 };
         user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
-        
-        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync(user);
-             
+
+        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+                     
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.That(result.Success, Is.False);
@@ -85,8 +85,8 @@ public class AuthServiceTest
     {
         var loginDto = new LoginDto{ Email = "wrongtest@test.test", Password = "Test" };
         
-        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync((User?)null);
-             
+        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+                     
         var result = await _authService.LoginAsync(loginDto);
 
         Assert.That(result.Success, Is.False);
@@ -107,14 +107,14 @@ public class AuthServiceTest
         user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
         var token = "thisIsTestToken";
         
-        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email)).ReturnsAsync(user);
+        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         _jwtService.Setup(x => x.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString())).Returns(token);
-        
+                     
         // Act
         var result = await _authService.LoginAsync(loginDto);
 
         // Assert
-        _userRepository.Verify(x => x.GetUserByEmailAsync(loginDto.Email), Times.Once);
+        _userRepository.Verify(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>()), Times.Once);
         _jwtService.Verify(x => x.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString()), Times.Once);
     }
 }
