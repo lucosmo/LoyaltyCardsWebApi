@@ -23,15 +23,15 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
+    public async Task<IActionResult> Login([FromBody] LoginDto loginDto, CancellationToken cancellationToken)
     {
-        var tokenResult = await _authService.LoginAsync(loginDto);
+        var tokenResult = await _authService.LoginAsync(loginDto, cancellationToken);
         return new ApiResult<string>(tokenResult);  
     }
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
         var tokenResult = _authService.GetTokenAuthHeader();
         if (!tokenResult.Success || string.IsNullOrEmpty(tokenResult.Value))
@@ -45,7 +45,7 @@ public class AuthController : ControllerBase
             return new ApiResult<int>(userIdResult);
         }
 
-        var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, userIdResult.Value);
+        var revokeResult = await _authService.AddRevokedTokenAsync(tokenResult.Value, userIdResult.Value, cancellationToken);
         if (!revokeResult.Success)
         {
             return new ApiResult<string>(revokeResult);
@@ -55,9 +55,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] CreateUserDto newUserDto)
+    public async Task<IActionResult> Register([FromBody] CreateUserDto newUserDto, CancellationToken cancellationToken)
     {
-        var result = await _authService.RegisterAsync(newUserDto);
+        var result = await _authService.RegisterAsync(newUserDto, cancellationToken);
         var location = Url.Action(nameof(UsersController.GetUserById), "Users", new { id = result.Value?.Id });
         if (result.Success && result.Value is not null && location is not null)
         {

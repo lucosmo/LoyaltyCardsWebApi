@@ -20,7 +20,7 @@ public class TokenRevocationMiddleware
         
         if (token.Success && !string.IsNullOrEmpty(token.Value))
         {
-            var isRevoked = await authService.IsTokenRevokedAsync(token.Value);
+            var isRevoked = await authService.IsTokenRevokedAsync(token.Value, context.RequestAborted);
             if (isRevoked)
             {
                 var title = "Unauthorized";
@@ -30,7 +30,7 @@ public class TokenRevocationMiddleware
                 var json = JsonSerializer.Serialize(problemDetails);
                 context.Response.StatusCode = statusCode;
                 context.Response.ContentType = "application/problem+json; charset=utf-8";
-                await context.Response.WriteAsync(json, Encoding.UTF8);
+                await context.Response.WriteAsync(json, Encoding.UTF8, context.RequestAborted);
                 return;
             }
         }
