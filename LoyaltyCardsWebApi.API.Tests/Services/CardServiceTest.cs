@@ -1,4 +1,5 @@
-﻿using LoyaltyCardsWebApi.API.Common;
+﻿using System.Security.Cryptography;
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
@@ -120,6 +121,26 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         }
 
         [Test, TestCaseSource(nameof(CreateCardTestCases))]
+        public void CreateCard_CancellationToken_ThrowsOperationCanceledException(CreateCardDto createCardDto, Card expectedCard, int userId)
+        {
+            // Arrange
+            using var cts = new CancellationTokenSource();
+            _cardRepository
+                .Setup(cr => cr.ExistsCardByBarcodeAsync(createCardDto.Barcode, userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
+                .ThrowsAsync(new OperationCanceledException(cts.Token));
+            
+
+            // Act & Assert
+            Assert.ThrowsAsync<OperationCanceledException>(async () =>
+            {
+                await _cardService.CreateCardAsync(createCardDto, userId, cts.Token);
+            });
+
+            _cardRepository.Verify(cr => cr.CreateCardAsync(It.IsAny<Card>(),It.IsAny<CancellationToken>()), Times.Never);
+            _cardRepository.Verify(cr => cr.ExistsCardByBarcodeAsync(createCardDto.Barcode, userId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test, TestCaseSource(nameof(CreateCardTestCases))]
         public async Task CreateCard_NoUserId_ReturnsFail(CreateCardDto createCardDto, Card card, int userId)
         {
             // Arrange
@@ -199,7 +220,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
                 4
             );
         }
-            
+
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
         public async Task DeleteCard_ValidInput_ReturnsSuccess(CardDto cardDto, Card card, int cardId, int userId)
         {
@@ -223,6 +244,28 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
             _cardRepository.Verify(cr => cr.Delete(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
         }
+
+        [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
+        public void DeleteCard_CancellationToken_ThrowsOperationCanceledException(CardDto cardDto, Card card, int cardId, int userId)
+        {
+            // Arrange
+            using var cts = new CancellationTokenSource();
+            _cardRepository
+                .Setup(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+            // Act
+            var ex = Assert.CatchAsync(async () => {
+                await _cardService.DeleteCardAsync(cardId, userId, cts.Token);
+            });
+
+            // Assert
+            Assert.That(ex, Is.InstanceOf<OperationCanceledException>());
+            
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
+            _cardRepository.Verify(cr => cr.Delete(cardId, userId, It.IsAny<CancellationToken>()), Times.Never);
+        }
+
 
         [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
         public async Task DeleteCard_NonExistentCard_ReturnsFailure(CardDto cardDto, Card card, int cardId, int userId)
@@ -317,6 +360,26 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.That(result.Value.AddedAt, Is.EqualTo(cardDto.AddedAt));
             Assert.That(result.Value.UserId, Is.EqualTo(cardDto.UserId));
 
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Test, TestCaseSource(nameof(DeleteAndGetCardByIdTestCases))]
+        public void GetCardById_CancellationToken_ThrowsOperationCanceledException(CardDto cardDto, Card card, int cardId, int userId)
+        {
+            // Arrange
+            using var cts = new CancellationTokenSource();
+            _cardRepository
+                .Setup(cr => cr.GetCardByIdAsync(cardId, userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
+                .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+            // Act
+            Exception ex = Assert.CatchAsync(async () =>
+            {
+                await _cardService.GetCardByIdAsync(cardId, userId, cts.Token);
+            }); 
+
+            // Assert
+            Assert.That(ex, Is.InstanceOf<OperationCanceledException>());   
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -420,6 +483,26 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             _cardRepository.Verify(cr => cr.GetCardsByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
         }
 
+        [Test, TestCaseSource(nameof(GetCardsByUserIdTestCases))]
+        public void GetCardsByUserId_CancellationToken_ThrowsOperationCanceledException(List<Card> cards, int userId, int? currentUserId, int expectedCount)
+        {
+            // Arrange
+            using var cts = new CancellationTokenSource();
+            _cardRepository
+                .Setup(cr => cr.GetCardsByUserIdAsync(userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
+                .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+            // Act
+            Exception ex = Assert.CatchAsync(async () =>
+            {
+                await _cardService.GetCardsByUserIdAsync(userId, currentUserId, cts.Token);
+            });
+
+            // Assert
+            Assert.That(ex, Is.InstanceOf<OperationCanceledException>());       
+            _cardRepository.Verify(cr => cr.GetCardsByUserIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+        }
+
         [Test]
         public async Task GetCardsByUserId_UserIdIsNull_ReturnsFailure()
         {
@@ -510,6 +593,27 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
             Assert.IsNull(result.Value);
             Assert.That(result.Error, Is.EqualTo("Card not found."));
 
+            _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
+            _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Test, TestCaseSource(nameof(UpdateCardTestCases))]
+        public void UpdateCard_CancellationToken_ThrowsOperationCanceledException(UpdateCardDto updateCardDto, Card card, Card updatedCard, int cardId, int userId)
+        {
+            // Arrange
+            using var cts = new CancellationTokenSource();
+            _cardRepository
+                .Setup(cr => cr.GetCardByIdAsync(cardId, userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
+                .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+            // Act
+            Exception ex = Assert.CatchAsync(async () =>
+            {
+                await _cardService.UpdateCardAsync(cardId, updateCardDto, userId, cts.Token);
+            });
+
+            // Assert
+            Assert.That(ex, Is.InstanceOf<OperationCanceledException>());
             _cardRepository.Verify(cr => cr.GetCardByIdAsync(cardId, userId, It.IsAny<CancellationToken>()), Times.Once);
             _cardRepository.Verify(cr => cr.UpdateCardAsync(It.IsAny<Card>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         }
