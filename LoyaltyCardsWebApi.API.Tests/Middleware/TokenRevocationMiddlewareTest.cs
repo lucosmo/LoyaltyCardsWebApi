@@ -79,11 +79,11 @@ public class TokenRevocationMiddlewareTest
             .Returns(Result<string>.Ok("Ok"));
         _authService
             .Setup(a => a.IsTokenRevokedAsync("Ok", cts.Token))
-            .Returns(async () =>
+            .Returns(() =>
             {
                 cts.Cancel();
                 cts.Token.ThrowIfCancellationRequested();
-                return false;
+                return Task.FromResult(false);
             });
         Exception ex = Assert.CatchAsync<OperationCanceledException>(async () =>
         {
