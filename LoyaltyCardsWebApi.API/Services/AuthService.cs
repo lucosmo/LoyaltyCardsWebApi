@@ -32,7 +32,7 @@ public class AuthService : IAuthService
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
-    public async Task<Result<string>> LoginAsync(LoginDto loginDto)
+    public async Task<Result<string>> LoginAsync(LoginDto loginDto, CancellationToken cancellationToken = default)
     {
         if (loginDto is null)
         {
@@ -46,7 +46,7 @@ public class AuthService : IAuthService
         {
             return Result<string>.BadRequest("Password is required.");
         }
-        var user = await _userRepository.GetUserByEmailAsync(loginDto.Email);
+        var user = await _userRepository.GetUserByEmailAsync(loginDto.Email, cancellationToken);
 
         if (user == null)
         {
@@ -66,7 +66,7 @@ public class AuthService : IAuthService
         return Result<string>.Ok(token);
     }
 
-    public async Task<Result<UserDto>> RegisterAsync(CreateUserDto newUserDto)
+    public async Task<Result<UserDto>> RegisterAsync(CreateUserDto newUserDto, CancellationToken cancellationToken = default)
     {
         if (newUserDto is null)
         {
@@ -85,7 +85,7 @@ public class AuthService : IAuthService
             return Result<UserDto>.BadRequest("Username is required.");
         }
 
-        var existingUser = await _userRepository.GetUserByEmailAsync(newUserDto.Email);
+        var existingUser = await _userRepository.GetUserByEmailAsync(newUserDto.Email, cancellationToken);
         if (existingUser != null)
         {
             return Result<UserDto>.Conflict($"User with this email: {newUserDto.Email} already exists.");
@@ -101,7 +101,7 @@ public class AuthService : IAuthService
         };
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUserDto.Password);
 
-        var createdUser = await _userRepository.CreateAsync(newUserModel);
+        var createdUser = await _userRepository.CreateAsync(newUserModel, cancellationToken);
         if (createdUser is null)
         {
             return Result<UserDto>.Fail($"Registration failed for this email: {newUserDto.Email}.");
@@ -147,7 +147,7 @@ public class AuthService : IAuthService
         return expiryDate;
     }
 
-    public async Task<Result<string>> AddRevokedTokenAsync(string token, int userId)
+    public async Task<Result<string>> AddRevokedTokenAsync(string token, int userId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -172,7 +172,7 @@ public class AuthService : IAuthService
             return Result<string>.Unauthorized("Token has expired.");
         }
 
-        var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId);
+        var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId, cancellationToken);
         if (revokedToken is null)
         {
             return Result<string>.Fail("Failed to revoke token.");
@@ -181,18 +181,18 @@ public class AuthService : IAuthService
         return Result<string>.Ok("Token successfully revoked.");
     }
 
-    public async Task<bool> IsTokenRevokedAsync(string token)
+    public async Task<bool> IsTokenRevokedAsync(string token, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
             return false;
         }
 
-        var isRevokedResult = await _authRepository.IsTokenRevokedAsync(token);
+        var isRevokedResult = await _authRepository.IsTokenRevokedAsync(token, cancellationToken);
         return isRevokedResult;
     }
 
-    public async Task<Result<bool>> RevokeAllTokensForUserAsync(int userId)
+    public async Task<Result<bool>> RevokeAllTokensForUserAsync(int userId, CancellationToken cancellationToken = default)
     {
         if (userId <= 0)
         {
@@ -204,7 +204,7 @@ public class AuthService : IAuthService
             return Result<bool>.Forbidden("No permission.");
         }
 
-        await _authRepository.RevokeAllTokensForUserAsync(userId);
+        await _authRepository.RevokeAllTokensForUserAsync(userId, cancellationToken);
         return Result<bool>.Ok(true);
     }
 

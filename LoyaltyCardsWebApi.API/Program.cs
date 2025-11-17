@@ -71,7 +71,7 @@ builder.Services.AddAuthentication(options =>
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/problem+json; charset=utf-8";
             var json = JsonSerializer.Serialize(problemDetails);
-            await context.Response.WriteAsync(json, Encoding.UTF8);
+            await context.Response.WriteAsync(json, Encoding.UTF8, context.HttpContext.RequestAborted);
         },
         OnForbidden = async context =>
         {
@@ -99,7 +99,7 @@ builder.Services.AddAuthentication(options =>
             context.Response.StatusCode = statusCode;
             context.Response.ContentType = "application/problem+json; charset=utf-8";
             var json = JsonSerializer.Serialize(problemDetails);
-            await context.Response.WriteAsync(json, Encoding.UTF8);
+            await context.Response.WriteAsync(json, Encoding.UTF8, context.HttpContext.RequestAborted);
         }
     };
 });

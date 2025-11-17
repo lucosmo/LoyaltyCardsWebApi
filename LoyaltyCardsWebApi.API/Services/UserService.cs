@@ -16,13 +16,13 @@ public class UserService : IUserService
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     }
-    public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser)
+    public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser, CancellationToken cancellationToken = default)
     {
         if (newUser is null)
         {
             return Result<UserDto>.BadRequest("User data is required to create a new User.");
         }
-        var existingUser = await _userRepository.GetUserByEmailAsync(newUser.Email);
+        var existingUser = await _userRepository.GetUserByEmailAsync(newUser.Email, cancellationToken);
         if (existingUser != null)
         {
             return Result<UserDto>.Conflict($"User with this email: {newUser.Email} already exists.");
@@ -37,13 +37,13 @@ public class UserService : IUserService
         };
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUser.Password);
 
-        var createdUser = await _userRepository.CreateAsync(newUserModel);
+        var createdUser = await _userRepository.CreateAsync(newUserModel, cancellationToken);
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
 
-    private async Task<Result<UserDto>> GetUserByIdCoreAsync(int userId)
+    private async Task<Result<UserDto>> GetUserByIdCoreAsync(int userId, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdAsync(userId, cancellationToken);
 
         if (user is null)
         {
@@ -51,7 +51,8 @@ public class UserService : IUserService
         }
         return Result<UserDto>.Ok(user.ToDto());
     } 
-    public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId)
+    
+    public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId, CancellationToken cancellationToken = default)
     {
         if (!currentUserId.HasValue)
         {
@@ -62,26 +63,26 @@ public class UserService : IUserService
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
 
-        return await GetUserByIdCoreAsync(currentUserId.Value);
+        return await GetUserByIdCoreAsync(currentUserId.Value, cancellationToken);
     }
-    public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int? currentUserId)
+    public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int? currentUserId, CancellationToken cancellationToken = default)
     {
         if (!currentUserId.HasValue || userId != currentUserId.Value)
         {
             return Result<UserDto>.Forbidden("No permission.");
         }
 
-        return await GetUserByIdCoreAsync(currentUserId.Value);
+        return await GetUserByIdCoreAsync(currentUserId.Value, cancellationToken);
     }
 
-    public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail)
+    public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(currentUserEmail))
         {
             return Result<UserDto>.BadRequest("Invalid email.");    
         }
 
-        var user = await _userRepository.GetUserByEmailAsync(currentUserEmail);
+        var user = await _userRepository.GetUserByEmailAsync(currentUserEmail, cancellationToken);
 
         if (user is null)
         {
@@ -91,7 +92,7 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     }
       
-    public async Task<Result<UserDto>> DeleteAsync(int userId, int currentUserId)
+    public async Task<Result<UserDto>> DeleteAsync(int userId, int currentUserId, CancellationToken cancellationToken = default)
     {
         if (userId <= 0)
         {
@@ -103,7 +104,7 @@ public class UserService : IUserService
             return Result<UserDto>.Forbidden("No permission.");
         }
 
-        var user = await _userRepository.DeleteAsync(userId);
+        var user = await _userRepository.DeleteAsync(userId, cancellationToken);
 
         if (user is null)
         {
@@ -114,14 +115,14 @@ public class UserService : IUserService
 
     }
 
-    public async Task<Result<List<UserDto>>> GetAllUsersAsync()
+    public async Task<Result<List<UserDto>>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        var users = await _userRepository.GetAllUsersAsync() ?? new List<User>();
+        var users = await _userRepository.GetAllUsersAsync(cancellationToken) ?? new List<User>();
         var userDtos = users.Select(u => u.ToDto()).ToList();
         return Result<List<UserDto>>.Ok(userDtos);
     }
 
-    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int currentUserId)
+    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int currentUserId, CancellationToken cancellationToken = default)
     {
         if (userId <= 0)
         {
@@ -137,7 +138,7 @@ public class UserService : IUserService
         {
             return Result<bool>.BadRequest("User data is required.");
         }
-        var existingUser = await _userRepository.GetUserByIdAsync(userId); 
+        var existingUser = await _userRepository.GetUserByIdAsync(userId, cancellationToken); 
         if (existingUser is null)
         {
             return Result<bool>.NotFound("User not found.");
@@ -166,7 +167,7 @@ public class UserService : IUserService
             }
         }
 
-        var isUserUpdated = await _userRepository.UpdateAsync(existingUser);
+        var isUserUpdated = await _userRepository.UpdateAsync(existingUser, cancellationToken);
         if (!isUserUpdated)
         {
             return Result<bool>.Fail("User update failed.");
