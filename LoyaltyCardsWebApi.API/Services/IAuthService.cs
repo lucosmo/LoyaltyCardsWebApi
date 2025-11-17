@@ -11,5 +11,5 @@ public interface IAuthService
     Result<int> GetUserId();
     Task<Result<string>> AddRevokedTokenAsync(string token, int userId, CancellationToken cancellationToken = default);
     Task<bool> IsTokenRevokedAsync(string token, CancellationToken cancellationToken = default);
-
+    Task<Result<bool>> RevokeAllTokensForUserAsync(int userId, CancellationToken cancellationToken = default);
 }

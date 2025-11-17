@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using LoyaltyCardsWebApi.API.Common;
+﻿using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
