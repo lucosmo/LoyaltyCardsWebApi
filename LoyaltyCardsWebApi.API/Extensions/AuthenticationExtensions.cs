@@ -10,6 +10,19 @@ public static class AuthenticationExtensions
 {
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, string jwtIssuer, string jwtAudience, string secretKey)
     {
+        if (string.IsNullOrWhiteSpace(jwtIssuer))
+        {
+            throw new ArgumentException("JWT issuer must not be null, empty, or whitespace.", nameof(jwtIssuer));
+        }
+        if (string.IsNullOrWhiteSpace(jwtAudience))
+        {
+            throw new ArgumentException("JWT audience must not be null, empty, or whitespace.", nameof(jwtAudience));
+        }
+        if (string.IsNullOrWhiteSpace(secretKey))
+        {
+            throw new ArgumentException("Secret key must not be null, empty, or whitespace.", nameof(secretKey));
+        }
+            
         services
             .AddAuthentication(options =>
         {
