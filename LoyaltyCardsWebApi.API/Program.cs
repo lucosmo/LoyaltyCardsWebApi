@@ -1,16 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using LoyaltyCardsWebApi.API.Middleware;
 using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.ExceptionHandling;
 using LoyaltyCardsWebApi.API.Data;
-using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using LoyaltyCardsWebApi.API.Models;
+using LoyaltyCardsWebApi.API.Extensions;
 
 
 DotNetEnv.Env.Load();
@@ -18,91 +15,25 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var jwtSettings = builder.Configuration.GetSection("JWTSettings");
 var secretKey = jwtSettings["JWT_Secret"];
+var jwtIssuer = jwtSettings["JWT_Issuer"];
+var jwtAudience = jwtSettings["JWT_Audience"];
 
-if (string.IsNullOrEmpty(secretKey))
+if (string.IsNullOrWhiteSpace(secretKey))
 {
-    throw new InvalidOperationException("Key for JWT authentication is not configured or is empty");
+    throw new InvalidOperationException("JWT Secret is not configured");
+}
+if (string.IsNullOrWhiteSpace(jwtIssuer))
+{
+    throw new InvalidOperationException("JWT Issuer is not configured");
+}
+if (string.IsNullOrWhiteSpace(jwtAudience))
+{
+    throw new InvalidOperationException("JWT Audience is not configured");
 }
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options => 
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["JWT_Issuer"],
-        ValidAudience = jwtSettings["JWT_Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnChallenge = async context =>
-        {
-            context.HandleResponse();
-            
-            if (context.Response.HasStarted)
-            {
-                return;
-            }
-                            
-            var statusCode = StatusCodes.Status401Unauthorized;
-            var details = !string.IsNullOrEmpty(context.Error)
-                ? context.Error : !string.IsNullOrEmpty(context.ErrorDescription)
-                    ? context.ErrorDescription : "Authentication failed.";
-            var title = "Unauthorized.";
-
-            var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
-                    context.HttpContext,
-                    title,
-                    statusCode,
-                    details
-                );
-            context.Response.Clear();
-            context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/problem+json; charset=utf-8";
-            var json = JsonSerializer.Serialize(problemDetails);
-            await context.Response.WriteAsync(json, Encoding.UTF8, context.HttpContext.RequestAborted);
-        },
-        OnForbidden = async context =>
-        {
-            if (context.Response.HasStarted)
-            {
-                return;
-            }
-
-            var statusCode = StatusCodes.Status403Forbidden;
-            var user = context.HttpContext.User;
-            var path = context.HttpContext.Request.Path;
-            var method = context.HttpContext.Request.Method;
-            var details = user.Identity?.IsAuthenticated == true
-                ? $"Access to {method} {path} is forbidden."
-                : $"Access forbidden.";
-            var title = "Access forbidden.";
-
-            var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
-                    context.HttpContext,
-                    title,
-                    statusCode,
-                    details
-                );
-            context.Response.Clear();
-            context.Response.StatusCode = statusCode;
-            context.Response.ContentType = "application/problem+json; charset=utf-8";
-            var json = JsonSerializer.Serialize(problemDetails);
-            await context.Response.WriteAsync(json, Encoding.UTF8, context.HttpContext.RequestAborted);
-        }
-    };
-});
+builder.Services.AddJwtAuthentication(jwtIssuer, jwtAudience, secretKey);
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
