@@ -1,9 +1,9 @@
-using System.Text;
-using System.Text.Json;
-using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace LoyaltyCardsWebApi.API.Tests.Authentication;
 
@@ -18,68 +18,20 @@ public class JwtBearerEventsCancellationTest()
     public void Setup()
     {
         _cts = new CancellationTokenSource();
-        _options = new JwtBearerOptions();
         _httpContext = new DefaultHttpContext();
         _httpContext.RequestAborted = _cts.Token;
 
-        _options.Events = new JwtBearerEvents
-        {
-            OnChallenge = async context =>
-            {
-                context.HandleResponse();
-                
-                if (context.Response.HasStarted)
-                {
-                    return;
-                }
-                                
-                var statusCode = StatusCodes.Status401Unauthorized;
-                var details = !string.IsNullOrEmpty(context.Error)
-                    ? context.Error : !string.IsNullOrEmpty(context.ErrorDescription)
-                        ? context.ErrorDescription : "Authentication failed.";
-                var title = "Unauthorized.";
+        var services = new ServiceCollection();
+        services.AddJwtAuthentication(
+            jwtIssuer: "test-issuer",
+            jwtAudience: "test-audience",
+            secretKey: "secret-key-at-least-32-chars-long"
+        );
 
-                var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
-                        context.HttpContext,
-                        title,
-                        statusCode,
-                        details
-                    );
-                context.Response.Clear();
-                context.Response.StatusCode = statusCode;
-                context.Response.ContentType = "application/problem+json; charset=utf-8";
-                var json = JsonSerializer.Serialize(problemDetails);
-                await context.Response.WriteAsync(json, Encoding.UTF8, context.HttpContext.RequestAborted);
-            },
-            OnForbidden = async context =>
-            {
-                if (context.Response.HasStarted)
-                {
-                    return;
-                }
-
-                var statusCode = StatusCodes.Status403Forbidden;
-                var user = context.HttpContext.User;
-                var path = context.HttpContext.Request.Path;
-                var method = context.HttpContext.Request.Method;
-                var details = user.Identity?.IsAuthenticated == true
-                    ? $"Access to {method} {path} is forbidden."
-                    : $"Access forbidden.";
-                var title = "Access forbidden.";
-
-                var problemDetails = ProblemDetailsHelper.CreateProblemDetails(
-                        context.HttpContext,
-                        title,
-                        statusCode,
-                        details
-                    );
-                context.Response.Clear();
-                context.Response.StatusCode = statusCode;
-                context.Response.ContentType = "application/problem+json; charset=utf-8";
-                var json = JsonSerializer.Serialize(problemDetails);
-                await context.Response.WriteAsync(json, Encoding.UTF8, context.HttpContext.RequestAborted);
-            }
-        };
+        var serviceProvider = services.BuildServiceProvider();
+        var optionsMonitor = serviceProvider.GetRequiredService<IOptionsMonitor<JwtBearerOptions>>();
+        _options = optionsMonitor.Get(JwtBearerDefaults.AuthenticationScheme);
+        _httpContext.RequestServices = serviceProvider;
     }
 
     [Test]
