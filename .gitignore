@@ -485,3 +485,4 @@ $RECYCLE.BIN/
 
 # Database folder
 tools/database/postgres-data/
+tools/database/seq-data/
