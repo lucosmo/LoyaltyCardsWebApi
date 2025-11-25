@@ -21,5 +21,10 @@ public class RequestContext : IRequestContext
     public string? Locale => HttpContext?.Request.Headers?.AcceptLanguage.FirstOrDefault();
     public string? TraceIdentifier => HttpContext?.TraceIdentifier;
     public IEnumerable<Claim> Claims => HttpContext?.User?.Claims ?? Enumerable.Empty<Claim>();
+     public string? UserId => HttpContext?.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? HttpContext?.User.FindFirst("sub")?.Value;
+    public string? UserAgent => HttpContext?.Request.Headers.UserAgent.ToString();
+    public string? Path => HttpContext?.Request.Path.Value;
+    public string? Method => HttpContext?.Request.Method;
     public string? ExpiryTime => HttpContext?.User.FindFirst(JwtRegisteredClaimNames.Exp)?.Value;
 }

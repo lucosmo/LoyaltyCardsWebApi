@@ -8,6 +8,7 @@ using LoyaltyCardsWebApi.API.Data;
 using Microsoft.AspNetCore.Identity;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Extensions;
+using Serilog;
 
 
 DotNetEnv.Env.Load();
@@ -33,6 +34,15 @@ if (string.IsNullOrWhiteSpace(jwtAudience))
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Host.UseSerilog((ctx, services, loggerConfig) =>
+{
+    loggerConfig
+        .ReadFrom.Configuration(ctx.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.WithMachineName()
+        .Enrich.WithProcessId()
+        .Enrich.WithThreadId();
+});
 builder.Services.AddJwtAuthentication(jwtIssuer, jwtAudience, secretKey);
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
@@ -54,8 +64,6 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -73,6 +81,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TokenRevocationMiddleware>();
+app.UseMiddleware<RequestLoggingContextMiddleware>();
 app.MapControllers();
 app.Run();
 
