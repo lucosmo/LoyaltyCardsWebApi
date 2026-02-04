@@ -1,13 +1,14 @@
-using Microsoft.EntityFrameworkCore;
+using LoyaltyCardsWebApi.API.Common;
+using LoyaltyCardsWebApi.API.Data;
+using LoyaltyCardsWebApi.API.ExceptionHandling;
+using LoyaltyCardsWebApi.API.Extensions;
+using LoyaltyCardsWebApi.API.Middleware;
+using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
-using LoyaltyCardsWebApi.API.Middleware;
-using LoyaltyCardsWebApi.API.Common;
-using LoyaltyCardsWebApi.API.ExceptionHandling;
-using LoyaltyCardsWebApi.API.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
-using LoyaltyCardsWebApi.API.Models;
-using LoyaltyCardsWebApi.API.Extensions;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 
@@ -32,8 +33,6 @@ if (string.IsNullOrWhiteSpace(jwtAudience))
     throw new InvalidOperationException("JWT Audience is not configured");
 }
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Host.UseSerilog((ctx, services, loggerConfig) =>
 {
     loggerConfig
@@ -43,12 +42,22 @@ builder.Host.UseSerilog((ctx, services, loggerConfig) =>
         .Enrich.WithProcessId()
         .Enrich.WithThreadId();
 });
+
+// Add services to the container.
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddJwtAuthentication(jwtIssuer, jwtAudience, secretKey);
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -60,6 +69,7 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<ICardRepository, CardRepository>();
 builder.Services.AddScoped<ICardService, CardService>();
 builder.Services.AddScoped<IRequestContext, RequestContext>();
+builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -76,12 +86,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
+app.UseSerilogRequestLogging();
+app.UseMiddleware<RequestContextMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TokenRevocationMiddleware>();
-app.UseMiddleware<RequestLoggingContextMiddleware>();
+app.UseMiddleware<UserContextMiddleware>();
 app.MapControllers();
 app.Run();
 
