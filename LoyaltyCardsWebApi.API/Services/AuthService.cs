@@ -10,59 +10,70 @@ namespace LoyaltyCardsWebApi.API.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly IRequestContext _requestContext;
+    private readonly IUserContext _userContext;
     private readonly IUserRepository _userRepository;
     private readonly IAuthRepository _authRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IJwtService _jwtService;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
-        IRequestContext requestContext,
+        IUserContext userContext,
         IAuthRepository authRepository,
         IUserRepository userRepository,
         ICurrentUserService currentUserService,
         IJwtService jwtService,
-        IPasswordHasher<User> passwordHasher)
+        IPasswordHasher<User> passwordHasher,
+        ILogger<AuthService> logger)
     {
-        _requestContext = requestContext ?? throw new ArgumentNullException(nameof(requestContext));
+        _userContext = userContext ?? throw new ArgumentNullException(nameof(userContext));
         _authRepository = authRepository ?? throw new ArgumentNullException(nameof(authRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _currentUserService = currentUserService ?? throw new ArgumentNullException(nameof(currentUserService));
         _jwtService = jwtService ?? throw new ArgumentNullException(nameof(jwtService));
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     public async Task<Result<string>> LoginAsync(LoginDto loginDto, CancellationToken cancellationToken = default)
     {
         if (loginDto is null)
         {
+            _logger.LogWarning("Login failed: Payload is null.");
             return Result<string>.BadRequest("Login data is required.");
         }
         if (string.IsNullOrEmpty(loginDto.Email))
         {
+            _logger.LogWarning("Login failed: Missing email.");
             return Result<string>.BadRequest("Email is required.");
         }
         if (string.IsNullOrEmpty(loginDto.Password))
         {
+            _logger.LogWarning("Login failed: Missing password for email {UserEmail}", loginDto.Email);
             return Result<string>.BadRequest("Password is required.");
         }
         var user = await _userRepository.GetUserByEmailAsync(loginDto.Email, cancellationToken);
 
         if (user == null)
         {
+            _logger.LogWarning("Login failed: User with email {UserEmail} not found", loginDto.Email);
             return Result<string>.Unauthorized("Invalid credentials.");
         }
         var verifiedHashedPassword = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
         if (verifiedHashedPassword == PasswordVerificationResult.Failed)
         {
+            _logger.LogWarning("Login failed: Invalid password for User {UserId}, email {UserEmail}.", user.Id, user.Email);
             return Result<string>.Unauthorized("Invalid credentials.");
         }
         
         var token = _jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString());
         if (string.IsNullOrEmpty(token))
         {
+            _logger.LogError("System Error: Token generation failed for User {UserId}", user.Id);
             return Result<string>.Fail("Token generation failed.");
         }
+
+        _logger.LogInformation("User {UserId} logged in successfully.", user.Id);
         return Result<string>.Ok(token);
     }
 
@@ -88,6 +99,7 @@ public class AuthService : IAuthService
         var existingUser = await _userRepository.GetUserByEmailAsync(newUserDto.Email, cancellationToken);
         if (existingUser != null)
         {
+            _logger.LogWarning("Registration failed: Email {UserEmail} already exists.", newUserDto.Email);
             return Result<UserDto>.Conflict($"User with this email: {newUserDto.Email} already exists.");
         }
         
@@ -102,6 +114,14 @@ public class AuthService : IAuthService
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUserDto.Password);
 
         var createdUser = await _userRepository.CreateAsync(newUserModel, cancellationToken);
+        if (createdUser is null)
+        {
+            _logger.LogError("System Error: Database insert failed during registration for {UserEmail}.", newUserDto.Email);
+            return Result<UserDto>.Fail($"Registration failed for this email: {newUserDto.Email}.");
+        }
+
+        _logger.LogInformation("User registered successfully. New UserId: {UserId}, Email: {UserEmail}", createdUser.Id, createdUser.Email);
+
         var userDto = createdUser.ToDto();
         return Result<UserDto>.Ok(userDto);
     }
@@ -117,7 +137,7 @@ public class AuthService : IAuthService
     }
     public Result<string> GetTokenAuthHeader()
     {
-        var authHeader = _requestContext.Authorization;
+        var authHeader = _userContext.AuthorizationHeader;
         if (authHeader is null || authHeader.StartsWith("Bearer ") == false)
         {
             return Result<string>.Unauthorized("Token not found in Authorization header.");
@@ -133,13 +153,8 @@ public class AuthService : IAuthService
 
     public DateTime? GetTokenExpiryDate()
     {
-        var expiryDateClaim = _requestContext.ExpiryTime;
-        if (string.IsNullOrEmpty(expiryDateClaim) || !long.TryParse(expiryDateClaim, out var expiryDateSeconds))
-        {
-            return null;
-        }
-        var expiryDate = DateTimeOffset.FromUnixTimeSeconds(expiryDateSeconds).UtcDateTime;
-        return expiryDate;
+        var expiryDateClaim = _userContext.TokenExpiryTime;
+        return expiryDateClaim?.UtcDateTime;
     }
 
     public async Task<Result<string>> AddRevokedTokenAsync(string token, int userId, CancellationToken cancellationToken = default)
@@ -154,20 +169,29 @@ public class AuthService : IAuthService
         }
         if (userId != _currentUserService.UserId)
         {
+            _logger.LogWarning("Security Alert: User {CurrentUserId} tried to revoke token of User {TargetUserId}.", _currentUserService.UserId, userId);
             return Result<string>.Forbidden("No permission.");
         }
         var tokenExpiryDateTime = GetTokenExpiryDate();
         if (tokenExpiryDateTime is null)
         {
+            _logger.LogWarning("Logout failed: Token expiry claim missing for User {UserId}.", userId);
             return Result<string>.NotFound("Token expiry date not found.");
         }
 
         if (tokenExpiryDateTime < DateTime.UtcNow)
         {
+            _logger.LogInformation("Logout attempt with expired token for User {UserId}.", userId);
             return Result<string>.Unauthorized("Token has expired.");
         }
 
         var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId, cancellationToken);
+        if (revokedToken is null)
+        {
+            _logger.LogError("System Error: Failed to add revoked token to DB for User {UserId}.", userId);
+            return Result<string>.Fail("Failed to revoke token.");
+        }
+        _logger.LogInformation("Token successfully revoked (Logout) for User {UserId}.", userId);
         return Result<string>.Ok("Token successfully revoked.");
     }
 

@@ -22,6 +22,7 @@ public class AuthRepository : IAuthRepository
         };
 
         var createdRevokedToken = await _appDbContext.RevokedToken.AddAsync(revokedToken, cancellationToken);
+        
         await _appDbContext.SaveChangesAsync(cancellationToken);
         return createdRevokedToken.Entity;
     }
