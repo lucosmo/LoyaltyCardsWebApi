@@ -16,8 +16,12 @@ namespace LoyaltyCardsWebApi.API.ExceptionHandling
         }
         public async ValueTask<bool> TryHandleAsync(HttpContext context, Exception exception, CancellationToken ct)
         {
-            _logger.LogError(exception, "Exception occurred: {Message}", exception.Message);
             var (status, details) = GetStatusCodeAndTitle(exception);
+            _logger.LogError(exception,
+                "An exception occurred while processing the request. Handled as {Status} ({ErrorDetails})",
+                status,
+                details);
+
             var title = "Exception";
             var problemDetails = ProblemDetailsHelper.CreateProblemDetails(context, title, status, details);
 
