@@ -1,8 +1,9 @@
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data.DTOs;
+using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
-using LoyaltyCardsWebApi.API.Extensions;
-using LoyaltyCardsWebApi.API.Common;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 
 namespace LoyaltyCardsWebApi.API.Services;
@@ -10,11 +11,13 @@ public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IUserRepository userRepository, IPasswordHasher<User> passwordHasher)
+    public UserService(IUserRepository userRepository, IPasswordHasher<User> passwordHasher, ILogger<UserService> logger)
     {
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
     public async Task<Result<UserDto>> CreateUserAsync(CreateUserDto newUser, CancellationToken cancellationToken = default)
     {
@@ -25,6 +28,7 @@ public class UserService : IUserService
         var existingUser = await _userRepository.GetUserByEmailAsync(newUser.Email, cancellationToken);
         if (existingUser != null)
         {
+            _logger.LogWarning("Admin create user failed: Email {UserEmail} already exists.", newUser.Email);
             return Result<UserDto>.Conflict($"User with this email: {newUser.Email} already exists.");
         }
         var newUserModel = new User
@@ -38,6 +42,7 @@ public class UserService : IUserService
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUser.Password);
 
         var createdUser = await _userRepository.CreateAsync(newUserModel, cancellationToken);
+        _logger.LogInformation("User created by Admin. New UserId: {NewUserId}, Email: {UserEmail}", createdUser.Id, createdUser.Email);
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
 
@@ -114,6 +119,7 @@ public class UserService : IUserService
 
         if (userId != currentUserId)
         {
+            _logger.LogWarning("Security Alert: User {CurrentUserId} tried to delete User {TargetUserId}", currentUserId, userId);
             return Result<UserDto>.Forbidden("No permission.");
         }
 
@@ -121,9 +127,11 @@ public class UserService : IUserService
 
         if (user is null)
         {
+            _logger.LogWarning("Delete failed: User {UserId} not found.", userId);
             return Result<UserDto>.NotFound("User not found.");
         }
 
+        _logger.LogInformation("User {UserId} deleted their account.", userId);
         return Result<UserDto>.Ok(user.ToDto());
 
     }
@@ -137,6 +145,9 @@ public class UserService : IUserService
 
     public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int? currentUserId, CancellationToken cancellationToken = default)
     {
+        bool emailChanged = false;
+        bool passChanged = false;
+
         if (userId <= 0)
         {
             return Result<bool>.BadRequest("Invalid user ID.");
@@ -149,6 +160,7 @@ public class UserService : IUserService
             
         if (userId != currentUserId)
         {
+            _logger.LogWarning("Security Alert: User {CurrentUserId} tried to update User {TargetUserId}", currentUserId, userId);
             return Result<bool>.Forbidden("No permission.");
         }
 
@@ -161,6 +173,8 @@ public class UserService : IUserService
         {
             return Result<bool>.NotFound("User not found.");
         }
+
+        string oldEmail = existingUser.Email;
         if (updatedUser.Email is not null && updatedUser.Email != existingUser.Email)
         {
             var existingEmail = await _userRepository.GetUserByEmailAsync(updatedUser.Email, cancellationToken);
@@ -169,6 +183,7 @@ public class UserService : IUserService
                 return Result<bool>.Conflict("Email is already in use by another account.");
             }
             existingUser.Email = updatedUser.Email;
+            emailChanged = true;
         }
         
         if (!string.IsNullOrEmpty(existingUser.PasswordHash) && !string.IsNullOrEmpty(updatedUser.NewPassword))
@@ -183,10 +198,12 @@ public class UserService : IUserService
                 else
                 {
                     existingUser.PasswordHash = _passwordHasher.HashPassword(existingUser, updatedUser.NewPassword);
+                    passChanged = true;
                 }
             }
             else
             {
+                _logger.LogWarning("User {UserId} password change failed: Invalid current password.", userId);
                 return Result<bool>.BadRequest("Invalid credentials.");
             }
         }
@@ -194,9 +211,17 @@ public class UserService : IUserService
         var isUserUpdated = await _userRepository.UpdateAsync(cancellationToken);
         if (!isUserUpdated)
         {
+            _logger.LogError("System Error: User {UserId} update failed in DB.", userId);
             return Result<bool>.Fail("User update failed.");
         }
-
+        if (emailChanged)
+        {
+            _logger.LogInformation("User {UserId} changed email from {OldEmail} to {NewEmail}", userId, oldEmail, existingUser.Email);
+        }
+        if (passChanged)
+        {
+            _logger.LogInformation("User {UserId} changed password.", userId);
+        }
         return Result<bool>.Ok(true);
     }
 }
