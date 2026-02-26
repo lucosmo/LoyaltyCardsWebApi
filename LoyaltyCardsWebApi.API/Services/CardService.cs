@@ -3,6 +3,7 @@ using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Extensions;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
+using Serilog.Data;
 
 namespace LoyaltyCardsWebApi.API.Services
 {
@@ -10,11 +11,13 @@ namespace LoyaltyCardsWebApi.API.Services
     {
         private readonly ICardRepository _cardRepository;
         private readonly IDateTimeProvider _dateTimeProvider;
-        
-        public CardService(ICardRepository cardRepository, IDateTimeProvider dateTimeProvider)
+        private readonly ILogger<CardService> _logger;
+
+        public CardService(ICardRepository cardRepository, IDateTimeProvider dateTimeProvider, ILogger<CardService> logger)
         {
             _cardRepository = cardRepository ?? throw new ArgumentNullException(nameof(cardRepository));
             _dateTimeProvider = dateTimeProvider ?? throw new ArgumentNullException(nameof(dateTimeProvider));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         public async Task<Result<CardDto>> CreateCardAsync(CreateCardDto newCard, int? userId, CancellationToken cancellationToken = default)
         {
@@ -26,6 +29,7 @@ namespace LoyaltyCardsWebApi.API.Services
             var barcodeExists = await _cardRepository.ExistsCardByBarcodeAsync(newCard.Barcode, userId.Value, cancellationToken);
             if (barcodeExists)
             {
+                _logger.LogWarning("Create card failed: Card already exists for User {UserId}. Barcode: {Barcode}", userId.Value, newCard.Barcode);
                 return Result<CardDto>.Conflict("A card with this barcode already exists for the user.");
             }
 
@@ -39,6 +43,14 @@ namespace LoyaltyCardsWebApi.API.Services
             };
 
             var createdCard = await _cardRepository.CreateCardAsync(newCardModel, cancellationToken);
+
+            if (createdCard is null)
+            {
+                _logger.LogError("System Error: Failed to persist new card for User {UserId}.", userId);
+                return Result<CardDto>.Fail("Card creation failed.");
+            }
+
+            _logger.LogInformation("Card created. Id: {CardId}, User: {UserId}.", createdCard.Id, userId);
             return Result<CardDto>.Ok(createdCard.ToDto());
         }
 
@@ -51,8 +63,22 @@ namespace LoyaltyCardsWebApi.API.Services
             var cardDeleted = await _cardRepository.DeleteAsync(id, userId.Value, cancellationToken);
             if (cardDeleted is null)
             {
+                _logger.LogWarning("Delete failed: Card {CardId} not found for User {UserId}.", id, userId);
                 return Result<CardDto>.NotFound("Card not found.");
             }
+            if (cardResult.UserId != userId)
+            {
+                _logger.LogWarning("Security Alert: User {UserId} tried to delete Card {CardId} belonging to another user.", userId, id);
+                return Result<CardDto>.Forbidden("You do not have permission to delete this card.");
+            }
+            var cardDeleted = await _cardRepository.Delete(id, userId.Value, cancellationToken);
+            if (cardDeleted is null)
+            {
+                _logger.LogError("System Error: Failed to delete Card {CardId}", id);
+                return Result<CardDto>.Fail("Deletion failed.");
+            }
+
+            _logger.LogInformation("Card {CardId} deleted by User {UserId}.", id, userId);
             return Result<CardDto>.Ok(cardDeleted.ToDto());
         }
 
@@ -67,6 +93,11 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.NotFound("Card not found.");
             }
+            if (cardResult.UserId != userId)
+            {
+                _logger.LogWarning("Security Alert: User {UserId} tried to access Card {CardId} belonging to User {OwnerId}.", userId, id, cardResult.UserId);
+                return Result<CardDto>.Forbidden("You do not have permission to access this card.");
+            }
             return Result<CardDto>.Ok(cardResult.ToDto());
         }
 
@@ -78,7 +109,8 @@ namespace LoyaltyCardsWebApi.API.Services
             }
             if (currentUserId.Value != userId)
             {
-                return Result<IEnumerable<CardDto>>.Forbidden("No permission to access this resource.");
+                _logger.LogWarning("Security Alert: User {UserId} tried to access cards of User {OwnerId}.", currentUserId, userId);
+                return Result<IEnumerable<CardDto>>.Forbidden("No permission.");
             }
             var cards = await _cardRepository.GetCardsByUserIdAsync(userId, cancellationToken);
             return Result<IEnumerable<CardDto>>.Ok(cards.Select(card => card.ToDto()));
@@ -90,13 +122,36 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.BadRequest("User ID is required to update this card.");
             }
-            var updatedCardResult = await _cardRepository.UpdateCardAsync(id, updateCard, userId.Value, cancellationToken);
+            var currentCard = await _cardRepository.GetCardByIdAsync(id, userId.Value, cancellationToken);
+            if (currentCard is null)
+            {
+                _logger.LogWarning("Update failed: Card {CardId} not found for User {UserId}.", id, userId);
+                return Result<CardDto>.NotFound("Card not found.");
+            }
+            if (currentCard.UserId != userId)
+            {
+                _logger.LogWarning("Security Alert: User {UserId} tried to update Card {CardId} belonging to another user.", userId, id);
+                return Result<CardDto>.Forbidden("No permission.");
+            }
+            Card card = new Card
+            {
+                Id = id,
+                Name = updateCard.Name ?? currentCard.Name,
+                Image = updateCard.Image ?? currentCard.Image,
+                Barcode = updateCard.Barcode ?? currentCard.Barcode,
+                UserId = currentCard.UserId, 
+                AddedAt = currentCard.AddedAt 
+            };
+            
+            var updatedCardResult = await _cardRepository.UpdateCardAsync(id, card, userId.Value, cancellationToken);
             if (updatedCardResult is null)
             {
+                _logger.LogError("System Error: Update failed for Card {CardId}, User {UserId}.", id, userId);
                 return Result<CardDto>.Fail("Card not found or update failed.");
             }
-            return Result<CardDto>.Ok(updatedCardResult.ToDto());
 
+            _logger.LogInformation("Card {CardId} updated by User {UserId}.", id, userId);
+            return Result<CardDto>.Ok(updatedCardResult.ToDto());
         }
     }
 }
