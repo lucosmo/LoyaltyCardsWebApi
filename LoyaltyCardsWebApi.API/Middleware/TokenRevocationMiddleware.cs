@@ -8,10 +8,12 @@ namespace LoyaltyCardsWebApi.API.Middleware;
 public class TokenRevocationMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly ILogger<TokenRevocationMiddleware> _logger;
 
-    public TokenRevocationMiddleware(RequestDelegate next)
+    public TokenRevocationMiddleware(RequestDelegate next, ILogger<TokenRevocationMiddleware> logger)
     {
         _next = next;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context, IAuthService authService, IProblemDetailsService problemDetailsService)
@@ -23,6 +25,7 @@ public class TokenRevocationMiddleware
             var isRevoked = await authService.IsTokenRevokedAsync(token.Value, context.RequestAborted);
             if (isRevoked)
             {
+                _logger.LogWarning("Security Alert: Request denied. Token has been revoked. IP: {ClientIp}", context.Connection.RemoteIpAddress?.ToString());
                 var title = "Unauthorized";
                 var statusCode = StatusCodes.Status401Unauthorized;
                 var details = "Invalid token";
