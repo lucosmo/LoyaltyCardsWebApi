@@ -68,7 +68,7 @@ namespace LoyaltyCardsWebApi.API.Services
             }
             if (cardResult.UserId != userId)
             {
-                _logger.LogWarning("Security Alert: User {UserId} tried to delete Card {CardId} belonging to another user.", userId, id);
+                _logger.LogWarning("Security Alert: User {CurrentUserId} tried to delete Card {CardId} belonging to User {TargetUserId}.", userId, id, cardResult.UserId);
                 return Result<CardDto>.Forbidden("You do not have permission to delete this card.");
             }
             var cardDeleted = await _cardRepository.Delete(id, userId.Value, cancellationToken);
@@ -95,7 +95,7 @@ namespace LoyaltyCardsWebApi.API.Services
             }
             if (cardResult.UserId != userId)
             {
-                _logger.LogWarning("Security Alert: User {UserId} tried to access Card {CardId} belonging to User {OwnerId}.", userId, id, cardResult.UserId);
+                _logger.LogWarning("Security Alert: User {CurrentUserId} tried to access Card {CardId} belonging to User {TargetUserId}.", userId, id, cardResult.UserId);
                 return Result<CardDto>.Forbidden("You do not have permission to access this card.");
             }
             return Result<CardDto>.Ok(cardResult.ToDto());
@@ -109,7 +109,7 @@ namespace LoyaltyCardsWebApi.API.Services
             }
             if (currentUserId.Value != userId)
             {
-                _logger.LogWarning("Security Alert: User {UserId} tried to access cards of User {OwnerId}.", currentUserId, userId);
+                _logger.LogWarning("Security Alert: User {CurrentUserId} tried to access cards of User {TargetUserId}.", currentUserId, userId);
                 return Result<IEnumerable<CardDto>>.Forbidden("No permission.");
             }
             var cards = await _cardRepository.GetCardsByUserIdAsync(userId, cancellationToken);
@@ -130,7 +130,7 @@ namespace LoyaltyCardsWebApi.API.Services
             }
             if (currentCard.UserId != userId)
             {
-                _logger.LogWarning("Security Alert: User {UserId} tried to update Card {CardId} belonging to another user.", userId, id);
+                _logger.LogWarning("Security Alert: User {CurrentUserId} tried to update Card {CardId} belonging to User {TargetUserId}.", userId, id, currentCard.UserId);
                 return Result<CardDto>.Forbidden("No permission.");
             }
             Card card = new Card

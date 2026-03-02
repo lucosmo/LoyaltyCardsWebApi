@@ -215,10 +215,14 @@ public class AuthService : IAuthService
 
         if (userId != _currentUserService.UserId)
         {
+            _logger.LogWarning("Security Alert: User {CurrentUserId} tried to revoke all tokens for User {TargetUserId}.",
+                _currentUserService.UserId,
+                userId);
             return Result<bool>.Forbidden("No permission.");
         }
 
         await _authRepository.RevokeAllTokensForUserAsync(userId, cancellationToken);
+        _logger.LogInformation("All tokens revoked (Global Logout) for User {UserId}.", userId);
         return Result<bool>.Ok(true);
     }
 
