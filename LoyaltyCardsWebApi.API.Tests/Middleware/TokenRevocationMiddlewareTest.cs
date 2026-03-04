@@ -2,7 +2,9 @@ using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Middleware;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Moq;
+using NUnit.Framework.Internal;
 
 namespace LoyaltyCardsWebApi.API.Tests.Middleware;
 
@@ -13,6 +15,7 @@ public class TokenRevocationMiddlewareTest
     private DefaultHttpContext _httpContext;
     private Mock<IAuthService> _authService;
     private Mock<IProblemDetailsService> _problemDetailsService;
+    private Mock<ILogger<TokenRevocationMiddleware>> _logger;
 
     [SetUp]
     public void SetUp()
@@ -20,6 +23,7 @@ public class TokenRevocationMiddlewareTest
         _requestDelegate = new Mock<RequestDelegate>();
         _httpContext = new DefaultHttpContext();
         _authService = new Mock<IAuthService>();
+        _logger = new Mock<ILogger<TokenRevocationMiddleware>>();
         _problemDetailsService = new Mock<IProblemDetailsService>();
     }
 
@@ -27,7 +31,7 @@ public class TokenRevocationMiddlewareTest
     public void InvokeAsync_RequestAbortedTokenCancelled_PropagatesOperationCanceledException()
     {
         using var cts = new CancellationTokenSource();
-        var middleware = new TokenRevocationMiddleware(_requestDelegate.Object);
+        var middleware = new TokenRevocationMiddleware(_requestDelegate.Object, _logger.Object);
         _httpContext.RequestAborted = cts.Token;
         cts.Cancel();
         _authService
@@ -51,7 +55,7 @@ public class TokenRevocationMiddlewareTest
     public async Task InvokeAsync_RequestAbortedNotCancelled_CallsNextAndDoesNotThrow()
     {
         using var cts = new CancellationTokenSource();
-        var middleware = new TokenRevocationMiddleware(_requestDelegate.Object);
+        var middleware = new TokenRevocationMiddleware(_requestDelegate.Object, _logger.Object);
         _httpContext.RequestAborted = cts.Token;
 
         _authService
@@ -72,7 +76,7 @@ public class TokenRevocationMiddlewareTest
     public void InvokeAsync_RequestAbortedTokenCancelledDuringRevocationCheck_PropagatesOperationCanceledException()
     {
         using var cts = new CancellationTokenSource();
-        var middleware = new TokenRevocationMiddleware(_requestDelegate.Object);
+        var middleware = new TokenRevocationMiddleware(_requestDelegate.Object, _logger.Object);
         _httpContext.RequestAborted = cts.Token;
         _authService
             .Setup(a => a.GetTokenAuthHeader())

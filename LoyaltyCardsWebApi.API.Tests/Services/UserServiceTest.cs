@@ -3,6 +3,7 @@ using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace LoyaltyCardsWebApi.API.Tests.Services;
@@ -12,6 +13,7 @@ public class UserServiceTest
 {
     private Mock<IUserRepository> _userRepository;
     private Mock<IPasswordHasher<User>> _passwordHasher;
+    private Mock<ILogger<UserService>> _logger;
     private UserService _userService;
 
     [SetUp]
@@ -19,7 +21,8 @@ public class UserServiceTest
     {
         _userRepository = new Mock<IUserRepository>();
         _passwordHasher = new Mock<IPasswordHasher<User>>();
-        _userService = new UserService(_userRepository.Object, _passwordHasher.Object);
+        _logger = new Mock<ILogger<UserService>>();
+        _userService = new UserService(_userRepository.Object, _passwordHasher.Object, _logger.Object);
     }
 
     [Test]
@@ -159,5 +162,47 @@ public class UserServiceTest
         //Assert
         Assert.That(ex, Is.InstanceOf<OperationCanceledException>());
         _passwordHasher.Verify(ph => ph.HashPassword(It.IsAny<User>(),It.IsAny<string>()), Times.Never);
+    }
+
+    [Test]
+    public async Task DeleteAsync_WhenUserTriesDeleteAnotherUser_LogSecurityAlertWarning()
+    {
+        var userId = 1;
+        var currentUserId = 2;
+
+        var result = await _userService.DeleteAsync(userId, currentUserId);
+        _logger.Verify(
+        x => x.Log(
+            LogLevel.Warning,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, _) =>
+                v.ToString()!.Contains("Security Alert")),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+        Times.Once);
+    }
+
+    [Test]
+    public async Task UpdateAsync_WhenUserTriesUpdateAnotherUser_LogSecurityAlertWarning()
+    {
+        var userId = 1;
+        var currentUserId = 2;
+        var updatedUser = new UpdatedUserDto
+        {
+            Email = "adam12@ggg12.uk",
+            CurrentPassword = "password12",
+            NewPassword = "newPassword32##"
+        };
+
+        var result = await _userService.UpdateUserAsync(userId, updatedUser, currentUserId);
+        _logger.Verify(
+        x => x.Log(
+            LogLevel.Warning,
+            It.IsAny<EventId>(),
+            It.Is<It.IsAnyType>((v, _) =>
+                v.ToString()!.Contains("Security Alert")),
+            It.IsAny<Exception>(),
+            It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+        Times.Once);
     }
 }

@@ -3,6 +3,7 @@ using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -14,6 +15,7 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
     {
         private Mock<ICardRepository> _cardRepository;
         private Mock<IDateTimeProvider> _dateTimeProvider;
+        private Mock<ILogger<CardService>> _logger;
         private CardService _cardService;
 
         [SetUp]
@@ -21,7 +23,8 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         {
             _cardRepository = new Mock<ICardRepository>();
             _dateTimeProvider = new Mock<IDateTimeProvider>();
-            _cardService = new CardService(_cardRepository.Object, _dateTimeProvider.Object);
+            _logger = new Mock<ILogger<CardService>>();
+            _cardService = new CardService(_cardRepository.Object, _dateTimeProvider.Object, _logger.Object);
         }
 
         private static class TimeData

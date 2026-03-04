@@ -4,6 +4,7 @@ using LoyaltyCardsWebApi.API.Models;
 using LoyaltyCardsWebApi.API.Repositories;
 using LoyaltyCardsWebApi.API.Services;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace LoyaltyCardsWebApi.API.Tests.Services;
@@ -11,29 +12,34 @@ namespace LoyaltyCardsWebApi.API.Tests.Services;
 [TestFixture]
 public class AuthServiceTest
 {
+    private Mock<IUserContext> _userContext;
     private Mock<IUserRepository> _userRepository;
     private Mock<IJwtService> _jwtService;
     private Mock<IAuthRepository> _authRepository;
     private Mock<IRequestContext> _requestContext;
     private Mock<ICurrentUserService> _currentUserService;
+    private Mock<ILogger<AuthService>> _logger;
     private IPasswordHasher<User> _passwordHasher;
     private AuthService _authService;
     [SetUp]
     public void SetUp()
     {
-        _currentUserService = new Mock<ICurrentUserService>();
+        _userContext = new Mock<IUserContext>();
         _requestContext = new Mock<IRequestContext>();
         _authRepository = new Mock<IAuthRepository>();
         _userRepository = new Mock<IUserRepository>();
+        _currentUserService = new Mock<ICurrentUserService>();
+        _logger = new Mock<ILogger<AuthService>>();
         _jwtService = new Mock<IJwtService>();
         _passwordHasher = new PasswordHasher<User>();
         _authService = new AuthService(
-            _requestContext.Object,
+            _userContext.Object,
             _authRepository.Object,
             _userRepository.Object,
             _currentUserService.Object,
             _jwtService.Object,
-            _passwordHasher
+            _passwordHasher,
+            _logger.Object
             );
     }
 
