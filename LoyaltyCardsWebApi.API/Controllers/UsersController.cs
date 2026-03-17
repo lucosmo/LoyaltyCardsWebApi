@@ -69,7 +69,7 @@ public class UsersController : ControllerBase
         {
             return Unauthorized("No permission to perform action.");
         }
-        var cards = await _cardService.GetCardsByUserIdAsync(id, currentUserId, cancellationToken);
+        var cards = await _cardService.GetCardsByUserIdAsync(id, currentUserId.Value, cancellationToken);
         return new ApiResult<IEnumerable<CardDto>>(cards);
     }
 
