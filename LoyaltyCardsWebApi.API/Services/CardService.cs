@@ -90,17 +90,6 @@ namespace LoyaltyCardsWebApi.API.Services
             {
                 return Result<CardDto>.BadRequest("User ID is required to update this card.");
             }
-            /*            
-            Card card = new Card
-            {
-                Id = id,
-                Name = updateCard.Name ?? currentCard.Name,
-                Image = updateCard.Image ?? currentCard.Image,
-                Barcode = updateCard.Barcode ?? currentCard.Barcode,
-                UserId = currentCard.UserId, 
-                AddedAt = currentCard.AddedAt 
-            };
-            */
             var updatedCardResult = await _cardRepository.UpdateCardAsync(id, updateCard, userId.Value, cancellationToken);
             if (updatedCardResult is null)
             {
