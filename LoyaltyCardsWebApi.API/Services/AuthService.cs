@@ -102,11 +102,6 @@ public class AuthService : IAuthService
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUserDto.Password);
 
         var createdUser = await _userRepository.CreateAsync(newUserModel, cancellationToken);
-        if (createdUser is null)
-        {
-            return Result<UserDto>.Fail($"Registration failed for this email: {newUserDto.Email}.");
-        }
-
         var userDto = createdUser.ToDto();
         return Result<UserDto>.Ok(userDto);
     }
@@ -173,11 +168,6 @@ public class AuthService : IAuthService
         }
 
         var revokedToken = await _authRepository.AddRevokedTokenAsync(token, tokenExpiryDateTime.Value, userId, cancellationToken);
-        if (revokedToken is null)
-        {
-            return Result<string>.Fail("Failed to revoke token.");
-        }
-              
         return Result<string>.Ok("Token successfully revoked.");
     }
 

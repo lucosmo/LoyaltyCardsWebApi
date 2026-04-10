@@ -21,11 +21,8 @@ public class AuthRepository : IAuthRepository
             UserId = userId
         };
 
-        var createdRevokedToken = await _appDbContext.RevokedToken.AddAsync(revokedToken, cancellationToken) 
-                                ?? throw new InvalidOperationException("Failed to insert revoked token into the database.");
-        
+        var createdRevokedToken = await _appDbContext.RevokedToken.AddAsync(revokedToken, cancellationToken);
         await _appDbContext.SaveChangesAsync(cancellationToken);
-        
         return createdRevokedToken.Entity;
     }
 
@@ -40,7 +37,10 @@ public class AuthRepository : IAuthRepository
             .Where(rt => rt.UserId == userId)
             .ToListAsync(cancellationToken);
         
-        _appDbContext.RevokedToken.RemoveRange(tokens);
-        await _appDbContext.SaveChangesAsync(cancellationToken);
+        if (tokens.Count != 0)
+        {
+            _appDbContext.RevokedToken.RemoveRange(tokens);
+            await _appDbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 }
