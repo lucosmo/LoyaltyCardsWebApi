@@ -9,5 +9,5 @@ public interface IUserRepository
     Task<User> CreateAsync(User newUser, CancellationToken cancellationToken = default);
     Task<bool> UpdateAsync(User user, CancellationToken cancellationToken = default);
     Task<User?> DeleteAsync(int id, CancellationToken cancellationToken = default);
-    Task<List<User>?> GetAllUsersAsync(CancellationToken cancellationToken = default);
+    Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default);
 }

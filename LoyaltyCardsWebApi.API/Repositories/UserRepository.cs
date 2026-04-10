@@ -29,9 +29,11 @@ public class UserRepository : IUserRepository
         return userToDelete;
     }
 
-    public async Task<List<User>?> GetAllUsersAsync(CancellationToken cancellationToken = default)
+    public async Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        var users = await _appDbContext.Users.ToListAsync(cancellationToken);
+        var users = await _appDbContext.Users
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
         return users;
     }
 
@@ -43,13 +45,14 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        User? user = await _appDbContext.Users.FirstOrDefaultAsync(x => x.Email.Equals(email), cancellationToken);
+        User? user = await _appDbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
         return user;
     }
 
     public async Task<bool> UpdateAsync(User user, CancellationToken cancellationToken = default)
     {
-        _appDbContext.Users.Update(user);
         var changedRows = await _appDbContext.SaveChangesAsync(cancellationToken);
         return changedRows > 0;
     }
