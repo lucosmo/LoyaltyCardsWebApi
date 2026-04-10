@@ -70,17 +70,17 @@ namespace LoyaltyCardsWebApi.API.Services
             return Result<CardDto>.Ok(cardResult.ToDto());
         }
 
-        public async Task<Result<IEnumerable<CardDto>>> GetCardsByUserIdAsync(int? userId, int currentUserId, CancellationToken cancellationToken = default)
+        public async Task<Result<IEnumerable<CardDto>>> GetCardsByUserIdAsync(int userId, int? currentUserId, CancellationToken cancellationToken = default)
         {
-            if (userId is null)
+            if (!currentUserId.HasValue)
             {
-                return Result<IEnumerable<CardDto>>.BadRequest("User ID is required to access cards.");
+                return Result<IEnumerable<CardDto>>.Forbidden("No permission.");
             }
-            if (currentUserId != userId)
+            if (currentUserId.Value != userId)
             {
                 return Result<IEnumerable<CardDto>>.Forbidden("No permission to access this resource.");
             }
-            var cards = await _cardRepository.GetCardsByUserIdAsync(userId.Value, cancellationToken);
+            var cards = await _cardRepository.GetCardsByUserIdAsync(userId, cancellationToken);
             return Result<IEnumerable<CardDto>>.Ok(cards.Select(card => card.ToDto()));
         }
 
