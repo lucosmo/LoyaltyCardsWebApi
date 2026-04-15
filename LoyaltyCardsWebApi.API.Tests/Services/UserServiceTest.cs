@@ -53,15 +53,16 @@ public class UserServiceTest
     {
         //Arrange
         using var cts = new CancellationTokenSource();
-        var id = 1;
+        var userId = 1;
+        var currentUserId = 1;
         _userRepository
-            .Setup(ur => ur.GetUserByIdAsync(id, It.Is<CancellationToken>(ct => ct == cts.Token)))
+            .Setup(ur => ur.GetUserByIdAsync(userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
             .ThrowsAsync(new OperationCanceledException(cts.Token));
 
         //Act
         Exception ex = Assert.CatchAsync(async () =>
         {
-            await _userService.GetUserByIdAsync(id, cts.Token);
+            await _userService.GetUserByIdAsync(userId, currentUserId, cts.Token);
         });
 
         //Assert
