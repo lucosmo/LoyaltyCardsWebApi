@@ -248,6 +248,8 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
         public async Task DeleteCard_CancellationToken_ThrowsOperationCanceledException(CardDto cardDto, Card card, int cardId, int userId)
         {
             // Arrange
+            _ = cardDto;
+            _ = card;
             using var cts = new CancellationTokenSource();
             _cardRepository
                 .Setup(cr => cr.DeleteAsync(cardId, userId, cts.Token))

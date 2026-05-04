@@ -107,6 +107,11 @@ public class UserService : IUserService
             return Result<UserDto>.BadRequest("Invalid user ID.");
         }
 
+        if (currentUserId is null)
+        {
+            return Result<UserDto>.Unauthorized("Authentication is required.");
+        }
+
         if (userId != currentUserId)
         {
             return Result<UserDto>.Forbidden("No permission.");
@@ -136,7 +141,13 @@ public class UserService : IUserService
         {
             return Result<bool>.BadRequest("Invalid user ID.");
         }
-        if (currentUserId is null || userId != currentUserId)
+
+        if (currentUserId is null)
+        {
+            return Result<bool>.Unauthorized("Authentication is required.");
+        }
+            
+        if (userId != currentUserId)
         {
             return Result<bool>.Forbidden("No permission.");
         }
