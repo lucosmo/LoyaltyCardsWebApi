@@ -49,27 +49,6 @@ public class UserServiceTest
     }
 
     [Test]
-    public void GetUserByIdCoreAsync_CancellationToken_ThrowsOperationCanceledException()
-    {
-        //Arrange
-        using var cts = new CancellationTokenSource();
-        var id = 1;
-        _userRepository
-            .Setup(ur => ur.GetUserByIdAsync(id, It.Is<CancellationToken>(ct => ct == cts.Token)))
-            .ThrowsAsync(new OperationCanceledException(cts.Token));
-
-        //Act
-        Exception ex = Assert.CatchAsync(async () =>
-        {
-            await _userService.GetUserByIdAsync(id, cts.Token);
-        });
-
-        //Assert
-        Assert.That(ex, Is.InstanceOf<OperationCanceledException>());
-        _userRepository.Verify(ur => ur.GetUserByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Test]
     public void GetUserByIdAsync_CancellationToken_ThrowsOperationCanceledException()
     {
         //Arrange

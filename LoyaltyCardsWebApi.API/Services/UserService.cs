@@ -43,6 +43,10 @@ public class UserService : IUserService
 
     private async Task<Result<UserDto>> GetUserByIdCoreAsync(int userId, CancellationToken cancellationToken = default)
     {
+        if (userId <= 0)
+        {
+            return Result<UserDto>.BadRequest("Invalid user ID.");
+        }
         var user = await _userRepository.GetUserByIdAsync(userId, cancellationToken);
 
         if (user is null)
@@ -52,7 +56,7 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     } 
     
-    public async Task<Result<UserDto>> GetUserByIdAsync(int? currentUserId, CancellationToken cancellationToken = default)
+    public async Task<Result<UserDto>> GetCurrentUserAsync(int? currentUserId, CancellationToken cancellationToken = default)
     {
         if (!currentUserId.HasValue)
         {
@@ -67,12 +71,16 @@ public class UserService : IUserService
     }
     public async Task<Result<UserDto>> GetUserByIdAsync(int userId, int? currentUserId, CancellationToken cancellationToken = default)
     {
+        if (userId <= 0)
+        {
+            return Result<UserDto>.BadRequest("Invalid user ID.");
+        }
         if (!currentUserId.HasValue || userId != currentUserId.Value)
         {
             return Result<UserDto>.Forbidden("No permission.");
         }
 
-        return await GetUserByIdCoreAsync(currentUserId.Value, cancellationToken);
+        return await GetUserByIdCoreAsync(userId, cancellationToken);
     }
 
     public async Task<Result<UserDto>> GetUserByEmailAsync(string currentUserEmail, CancellationToken cancellationToken = default)
@@ -92,11 +100,16 @@ public class UserService : IUserService
         return Result<UserDto>.Ok(user.ToDto());
     }
       
-    public async Task<Result<UserDto>> DeleteAsync(int userId, int currentUserId, CancellationToken cancellationToken = default)
+    public async Task<Result<UserDto>> DeleteAsync(int userId, int? currentUserId, CancellationToken cancellationToken = default)
     {
         if (userId <= 0)
         {
             return Result<UserDto>.BadRequest("Invalid user ID.");
+        }
+
+        if (currentUserId is null)
+        {
+            return Result<UserDto>.Unauthorized("Authentication is required.");
         }
 
         if (userId != currentUserId)
@@ -117,18 +130,23 @@ public class UserService : IUserService
 
     public async Task<Result<List<UserDto>>> GetAllUsersAsync(CancellationToken cancellationToken = default)
     {
-        var users = await _userRepository.GetAllUsersAsync(cancellationToken) ?? new List<User>();
+        var users = await _userRepository.GetAllUsersAsync(cancellationToken);
         var userDtos = users.Select(u => u.ToDto()).ToList();
         return Result<List<UserDto>>.Ok(userDtos);
     }
 
-    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int currentUserId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> UpdateUserAsync(int userId, UpdatedUserDto updatedUser, int? currentUserId, CancellationToken cancellationToken = default)
     {
         if (userId <= 0)
         {
             return Result<bool>.BadRequest("Invalid user ID.");
         }
 
+        if (currentUserId is null)
+        {
+            return Result<bool>.Unauthorized("Authentication is required.");
+        }
+            
         if (userId != currentUserId)
         {
             return Result<bool>.Forbidden("No permission.");
@@ -143,10 +161,16 @@ public class UserService : IUserService
         {
             return Result<bool>.NotFound("User not found.");
         }
-        if (updatedUser.Email != null && updatedUser.Email != existingUser.Email)
+        if (updatedUser.Email is not null && updatedUser.Email != existingUser.Email)
         {
+            var existingEmail = await _userRepository.GetUserByEmailAsync(updatedUser.Email, cancellationToken);
+            if (existingEmail is not null)
+            {
+                return Result<bool>.Conflict("Email is already in use by another account.");
+            }
             existingUser.Email = updatedUser.Email;
         }
+        
         if (!string.IsNullOrEmpty(existingUser.PasswordHash) && !string.IsNullOrEmpty(updatedUser.NewPassword))
         {
             var verifiedHashedCurrentPassword = _passwordHasher.VerifyHashedPassword(existingUser, existingUser.PasswordHash, updatedUser.CurrentPassword);
@@ -167,7 +191,7 @@ public class UserService : IUserService
             }
         }
 
-        var isUserUpdated = await _userRepository.UpdateAsync(existingUser, cancellationToken);
+        var isUserUpdated = await _userRepository.UpdateAsync(cancellationToken);
         if (!isUserUpdated)
         {
             return Result<bool>.Fail("User update failed.");

@@ -29,7 +29,7 @@ public class UsersController : ControllerBase
         return new ApiResult<UserDto>(result);
     }
 
-    [Authorize]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [HttpGet]
     public async Task<IActionResult> GetAllUsers(CancellationToken cancellationToken)
     {
@@ -42,7 +42,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
-        var user = await _userService.GetUserByIdAsync(currentUserId, cancellationToken);
+        var user = await _userService.GetCurrentUserAsync(currentUserId, cancellationToken);
         return new ApiResult<UserDto>(user);
     }
 
@@ -51,11 +51,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetUserById(int id, CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
-        if (currentUserId is null)
-        {
-            return Unauthorized("No permission to perform action.");
-        }
-        var user = await _userService.GetUserByIdAsync(id, currentUserId.Value, cancellationToken);
+        var user = await _userService.GetUserByIdAsync(id, currentUserId, cancellationToken);
         return new ApiResult<UserDto>(user);
     }
 
@@ -65,10 +61,6 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> GetCardsByUserId(int id, CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
-        if (currentUserId is null)
-        {
-            return Unauthorized("No permission to perform action.");
-        }
         var cards = await _cardService.GetCardsByUserIdAsync(id, currentUserId, cancellationToken);
         return new ApiResult<IEnumerable<CardDto>>(cards);
     }
@@ -78,11 +70,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> DeleteUserById(int id, CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
-        if (currentUserId is null)
-        {
-            return Unauthorized("No permission to perform action.");
-        }
-        var user = await _userService.DeleteAsync(id, currentUserId.Value, cancellationToken);
+        var user = await _userService.DeleteAsync(id, currentUserId, cancellationToken);
         return new ApiResult<UserDto>(user);
     }
 
@@ -91,11 +79,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> UpdateUser(int id, [FromBody]UpdatedUserDto updatedUser, CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
-        if (currentUserId is null)
-        {
-            return Unauthorized("No permission to perform action.");
-        }
-        var isUserUpdated = await _userService.UpdateUserAsync(id, updatedUser, currentUserId.Value, cancellationToken);
+        var isUserUpdated = await _userService.UpdateUserAsync(id, updatedUser, currentUserId, cancellationToken);
         return new ApiResult<bool>(isUserUpdated);
     }
 }
