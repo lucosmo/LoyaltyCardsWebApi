@@ -180,7 +180,7 @@ public class UserService : IUserService
             }
         }
 
-        var isUserUpdated = await _userRepository.UpdateAsync(existingUser, cancellationToken);
+        var isUserUpdated = await _userRepository.UpdateAsync(cancellationToken);
         if (!isUserUpdated)
         {
             return Result<bool>.Fail("User update failed.");

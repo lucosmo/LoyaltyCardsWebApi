@@ -51,7 +51,7 @@ public class UserRepository : IUserRepository
         return user;
     }
 
-    public async Task<bool> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(CancellationToken cancellationToken = default)
     {
         var changedRows = await _appDbContext.SaveChangesAsync(cancellationToken);
         return changedRows > 0;

@@ -74,7 +74,7 @@ namespace LoyaltyCardsWebApi.API.Services
         {
             if (!currentUserId.HasValue)
             {
-                return Result<IEnumerable<CardDto>>.Forbidden("No permission.");
+                return Result<IEnumerable<CardDto>>.Unauthorized("Authentication is required.");
             }
             if (currentUserId.Value != userId)
             {

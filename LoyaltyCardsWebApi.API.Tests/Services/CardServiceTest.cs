@@ -580,8 +580,8 @@ namespace LoyaltyCardsWebApi.API.Tests.Services
                 .Setup(cr => cr.GetCardByIdAsync(cardId, userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
                 .ThrowsAsync(new OperationCanceledException(cts.Token));
             _cardRepository
-                .Setup(cr => cr.UpdateCardAsync(cardId, updateCardDto, userId, It.Is<CancellationToken>(ct => ct == cts.Token))).
-                ThrowsAsync(new OperationCanceledException(cts.Token));
+                .Setup(cr => cr.UpdateCardAsync(cardId, updateCardDto, userId, It.Is<CancellationToken>(ct => ct == cts.Token)))
+                .ThrowsAsync(new OperationCanceledException(cts.Token));
 
             // Act
             Exception ex = Assert.CatchAsync(async () =>
