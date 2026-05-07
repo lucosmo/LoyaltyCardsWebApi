@@ -1,3 +1,4 @@
+using LoyaltyCardsWebApi.API.Common;
 using LoyaltyCardsWebApi.API.Data;
 using LoyaltyCardsWebApi.API.Data.DTOs;
 using LoyaltyCardsWebApi.API.Models;
@@ -150,5 +151,77 @@ public class AuthServiceTest
         // Assert
         _userRepository.Verify(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>()), Times.Once);
         _jwtService.Verify(x => x.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString()), Times.Once);
+    }
+
+    [Test]
+    public async Task LoginAsync_WhenJWTGenerationFailed_LogSystemErrorAndResultFailed()
+    {
+        // Arrange
+        var passwordHashDefault = string.Empty;
+        var email = "test@test.test";
+        var correctPassword = "Test";
+        var userName = "userTest";
+        var userId = 1;
+        var loginDto = new LoginDto { Email = email, Password = correctPassword };
+        var user = new User { Id = userId, UserName = userName, Email = email, PasswordHash = passwordHashDefault, Role = 0 };
+        user.PasswordHash = _passwordHasher.HashPassword(user, correctPassword);
+        var token = string.Empty;
+
+        _userRepository.Setup(x => x.GetUserByEmailAsync(loginDto.Email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _jwtService.Setup(x => x.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString())).Returns(token);
+
+        // Act
+        var result = await _authService.LoginAsync(loginDto);
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        _logger.Verify(
+           x => x.Log(
+               LogLevel.Error,
+               It.IsAny<EventId>(),
+               It.Is<It.IsAnyType>((v, _) =>
+                   v.ToString()!.Contains("System Error")),
+               It.IsAny<Exception>(),
+               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+           Times.Once);
+    }
+
+    [Test]
+    public async Task RegisterAsync_NewUserNotCreated_LogSystemErrorAndResultFailed()
+    {
+        // Arrange
+        CreateUserDto newUser = new CreateUserDto
+        {
+            UserName = "userTest",
+            Email = "test@test.test",
+            Password = "password"
+        };
+
+        var user = new User
+        {
+            Id = 1,
+            UserName = "userTest",
+            Email = "test@test.test",
+            PasswordHash = "password_hash",
+            Role = UserRole.User
+        };
+
+        _userRepository.Setup(x => x.GetUserByEmailAsync(newUser.Email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+        _userRepository.Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
+
+        // Act
+        var result = await _authService.RegisterAsync(newUser, It.IsAny<CancellationToken>());
+
+        // Assert
+        Assert.That(result.Success, Is.False);
+        _logger.Verify(
+           x => x.Log(
+               LogLevel.Error,
+               It.IsAny<EventId>(),
+               It.Is<It.IsAnyType>((v, _) =>
+                   v.ToString()!.Contains("System Error")),
+               It.IsAny<Exception>(),
+               It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+           Times.Once);
     }
 }

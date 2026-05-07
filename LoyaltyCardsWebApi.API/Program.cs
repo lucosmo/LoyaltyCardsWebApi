@@ -89,12 +89,12 @@ if (app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseHttpsRedirection();
-app.UseSerilogRequestLogging();
 app.UseMiddleware<RequestContextMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<TokenRevocationMiddleware>();
 app.UseMiddleware<UserContextMiddleware>();
+app.UseSerilogRequestLogging();
 app.MapControllers();
 app.Run();
 

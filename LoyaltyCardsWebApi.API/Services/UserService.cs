@@ -42,6 +42,11 @@ public class UserService : IUserService
         newUserModel.PasswordHash = _passwordHasher.HashPassword(newUserModel, newUser.Password);
 
         var createdUser = await _userRepository.CreateAsync(newUserModel, cancellationToken);
+        if (createdUser is null)
+        {
+            _logger.LogError("System Error: Failed to persist new user with Email {UserEmail}.", newUser.Email);
+            return Result<UserDto>.Fail("User creation failed.");
+        }
         _logger.LogInformation("User created by Admin. New UserId: {NewUserId}, Email: {UserEmail}", createdUser.Id, createdUser.Email);
         return Result<UserDto>.Ok(createdUser.ToDto());
     }
