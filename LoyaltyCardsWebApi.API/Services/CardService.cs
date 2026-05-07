@@ -63,17 +63,6 @@ namespace LoyaltyCardsWebApi.API.Services
             var cardDeleted = await _cardRepository.DeleteAsync(id, userId.Value, cancellationToken);
             if (cardDeleted is null)
             {
-                _logger.LogWarning("Delete failed: Card {CardId} not found for User {UserId}.", id, userId);
-                return Result<CardDto>.NotFound("Card not found.");
-            }
-            if (cardResult.UserId != userId)
-            {
-                _logger.LogWarning("Security Alert: User {CurrentUserId} tried to delete Card {CardId} belonging to User {TargetUserId}.", userId, id, cardResult.UserId);
-                return Result<CardDto>.Forbidden("You do not have permission to delete this card.");
-            }
-            var cardDeleted = await _cardRepository.Delete(id, userId.Value, cancellationToken);
-            if (cardDeleted is null)
-            {
                 _logger.LogError("System Error: Failed to delete Card {CardId}", id);
                 return Result<CardDto>.Fail("Deletion failed.");
             }
@@ -133,17 +122,8 @@ namespace LoyaltyCardsWebApi.API.Services
                 _logger.LogWarning("Security Alert: User {CurrentUserId} tried to update Card {CardId} belonging to User {TargetUserId}.", userId, id, currentCard.UserId);
                 return Result<CardDto>.Forbidden("No permission.");
             }
-            Card card = new Card
-            {
-                Id = id,
-                Name = updateCard.Name ?? currentCard.Name,
-                Image = updateCard.Image ?? currentCard.Image,
-                Barcode = updateCard.Barcode ?? currentCard.Barcode,
-                UserId = currentCard.UserId, 
-                AddedAt = currentCard.AddedAt 
-            };
-            
-            var updatedCardResult = await _cardRepository.UpdateCardAsync(id, card, userId.Value, cancellationToken);
+           
+            var updatedCardResult = await _cardRepository.UpdateCardAsync(id, updateCard, userId.Value, cancellationToken);
             if (updatedCardResult is null)
             {
                 _logger.LogError("System Error: Update failed for Card {CardId}, User {UserId}.", id, userId);
